@@ -185,6 +185,12 @@ namespace ItemSkillRequirementExpanded.Core
         /// <summary>Penalties in tournament fights (off = everyone fights a tournament as in vanilla).</summary>
         public bool ApplyInTournaments { get; set; } = true;
 
+        // ---- Inventory ----
+
+        /// <summary>Tint inventory list rows orange when the selected hero's skill is below the item's requirement
+        /// (<see cref="InventoryHighlight"/>). Vanilla's red "can't use" wins.</summary>
+        public bool HighlightItemsAboveSkill { get; set; } = true;
+
         // ---- Debug ----
 
         /// <summary>Write the item requirement CSV at game start even outside the dev install.</summary>

@@ -1,0 +1,44 @@
+<Brushes>
+  <!-- Item Skill Requirement Expanded: inventory rows whose requirement is above the selected hero's skill.
+       Copies of vanilla's Inventory.Tuple.CharacterCantUse.Left/Right (SandBox\GUI\Brushes\Inventory.xml, red #FF4239)
+       in orange, so they read as "usable, but you are not skilled enough" next to vanilla's red "can't use".
+       Applied by Patches\InventoryHighlightPatch only where vanilla shows the row in its default look. -->
+  <Brush Name="ItemSkillRequirementExpanded.Tuple.AboveSkill.Left">
+    <Layers>
+      <BrushLayer Name="Default" Sprite="Inventory\tuple_left" ExtendTop="2" ExtendBottom="2" Color="#FFA028FF"/>
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Name="Default" Sprite="Inventory\tuple_left" ExtendTop="2" ExtendBottom="2" />
+      </Style>
+      <Style Name="Hovered">
+        <BrushLayer Name="Default" Sprite="Inventory\tuple_left" ExtendTop="2" ExtendBottom="2" ColorFactor="1.2" />
+      </Style>
+      <Style Name="Pressed">
+        <BrushLayer Name="Default" Sprite="Inventory\tuple_left_pressed" ExtendTop="2" ExtendBottom="2" ExtendLeft="2" ExtendRight="2" ValueFactor="-30" />
+      </Style>
+      <Style Name="Selected">
+        <BrushLayer Name="Default" Sprite="Inventory\tuple_left" ExtendTop="2" ExtendBottom="2" SaturationFactor="15" ValueFactor="5" />
+      </Style>
+    </Styles>
+  </Brush>
+  <Brush Name="ItemSkillRequirementExpanded.Tuple.AboveSkill.Right">
+    <Layers>
+      <BrushLayer Name="Default" Sprite="Inventory\tuple_right" ExtendTop="2" ExtendBottom="2" Color="#FFA028FF"/>
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Name="Default" Sprite="Inventory\tuple_right" ExtendTop="2" ExtendBottom="2" />
+      </Style>
+      <Style Name="Hovered">
+        <BrushLayer Name="Default" Sprite="Inventory\tuple_right" ExtendTop="2" ExtendBottom="2" ColorFactor="1.2" />
+      </Style>
+      <Style Name="Pressed">
+        <BrushLayer Name="Default" Sprite="Inventory\tuple_right_pressed" ExtendTop="2" ExtendBottom="2" ExtendLeft="2" ExtendRight="2" ValueFactor="-30" />
+      </Style>
+      <Style Name="Selected">
+        <BrushLayer Name="Default" Sprite="Inventory\tuple_right" ExtendTop="2" ExtendBottom="2" SaturationFactor="15" ValueFactor="5" />
+      </Style>
+    </Styles>
+  </Brush>
+</Brushes>

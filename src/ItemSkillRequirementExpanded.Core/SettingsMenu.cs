@@ -118,18 +118,19 @@ namespace ItemSkillRequirementExpanded.Core
         private const double MaxRequirement = 330;
 
         public static readonly MenuGroup Who = new MenuGroup("Who is affected", 0);
-        public static readonly MenuGroup Requirements = new MenuGroup("Requirements", 1);
-        public static readonly MenuGroup Curve = new MenuGroup("Penalty curve", 2);
-        public static readonly MenuGroup Starter = new MenuGroup("Starter gear", 3);
-        public static readonly MenuGroup Melee = new MenuGroup("Melee weapons", 4);
-        public static readonly MenuGroup Armour = new MenuGroup("Armour", 5);
-        public static readonly MenuGroup Shields = new MenuGroup("Shields", 6);
-        public static readonly MenuGroup Ranged = new MenuGroup("Bows, crossbows and slings", 7);
-        public static readonly MenuGroup Mounts = new MenuGroup("Horses", 8);
-        public static readonly MenuGroup Debug = new MenuGroup("Debug", 9);
+        public static readonly MenuGroup Inventory = new MenuGroup("Inventory", 1);
+        public static readonly MenuGroup Requirements = new MenuGroup("Requirements", 2);
+        public static readonly MenuGroup Curve = new MenuGroup("Penalty curve", 3);
+        public static readonly MenuGroup Starter = new MenuGroup("Starter gear", 4);
+        public static readonly MenuGroup Melee = new MenuGroup("Melee weapons", 5);
+        public static readonly MenuGroup Armour = new MenuGroup("Armour", 6);
+        public static readonly MenuGroup Shields = new MenuGroup("Shields", 7);
+        public static readonly MenuGroup Ranged = new MenuGroup("Bows, crossbows and slings", 8);
+        public static readonly MenuGroup Mounts = new MenuGroup("Horses", 9);
+        public static readonly MenuGroup Debug = new MenuGroup("Debug", 10);
 
         public static IReadOnlyList<MenuGroup> Groups { get; } =
-            new[] { Who, Requirements, Curve, Starter, Melee, Armour, Shields, Ranged, Mounts, Debug };
+            new[] { Who, Inventory, Requirements, Curve, Starter, Melee, Armour, Shields, Ranged, Mounts, Debug };
 
         private const string LowHint = " Just below the requirement (skill/requirement close to 100%).";
         private const string MidHint = " At the curve's mid point (default: skill at 60% of the requirement).";
@@ -150,6 +151,11 @@ namespace ItemSkillRequirementExpanded.Core
             Flag(Who, nameof(SkillRequirementSettings.ApplyInTournaments), "In tournaments",
                 "Penalties also apply in tournament fights. Off = everyone fights a tournament as in vanilla. Troops never pay. Default on.",
                 s => s.ApplyInTournaments, (s, v) => s.ApplyInTournaments = v),
+
+            // ---- Inventory ----
+            Flag(Inventory, nameof(SkillRequirementSettings.HighlightItemsAboveSkill), "Highlight items above your skill",
+                "In the inventory lists, items whose requirement is above the selected hero's skill are tinted orange (the primary use's skill for weapons with two uses). Vanilla's red - the hero can't use it at all - always wins. Only for heroes the 'Who is affected' toggles cover. Default on.",
+                s => s.HighlightItemsAboveSkill, (s, v) => s.HighlightItemsAboveSkill = v),
 
             // ---- Requirements: the tier table and the per-category scales ----
             Tier(0, s => s.RequirementAtTier0, (s, v) => s.RequirementAtTier0 = v, 0),

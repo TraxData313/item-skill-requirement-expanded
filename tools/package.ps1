@@ -38,7 +38,7 @@ if ($LASTEXITCODE -ne 0) { throw "Build failed." }
 
 New-Item -ItemType Directory -Force $binDir | Out-Null
 Copy-Item (Join-Path $repoRoot "module\SubModule.xml") $moduleDir -Force
-# GUI and ModuleData only if the mod ever grows them (it has neither today).
+# GUI (the orange inventory row brush, v1.1.0) and ModuleData (none today).
 foreach ($sub in "GUI", "ModuleData") {
     $source = Join-Path $repoRoot "module\$sub"
     if (Test-Path $source) { Copy-Item $source (Join-Path $moduleDir $sub) -Recurse -Force }
