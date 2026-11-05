@@ -73,14 +73,24 @@ namespace GearMastery.Core
         // Reductions stop at 90%: a 100% swing / speed loss would freeze an agent.
         private const double MaxReduction = 0.9;
         private const double MaxBonus = 5.0;
+        private const double MaxRequirement = 330;
 
         public static readonly IReadOnlyList<SettingDef> All = new List<SettingDef>
         {
-            Num("WeaponSlope", "Requirement per item tier for melee and throwing weapons (R = slope x tier, rounded to 5). Vanilla bows sit at about 12 x tier.", 0, 50, s => s.WeaponSlope, (s, v) => s.WeaponSlope = (float)v),
-            Num("ShieldSlope", "Requirement per item tier for shields (One Handed).", 0, 50, s => s.ShieldSlope, (s, v) => s.ShieldSlope = (float)v),
-            Num("ArmourSlope", "Requirement per item tier for armour (Athletics).", 0, 50, s => s.ArmourSlope, (s, v) => s.ArmourSlope = (float)v),
-            Whole("WeaponCap", "Highest requirement a weapon or shield can ask.", 0, 330, s => s.WeaponCap, (s, v) => s.WeaponCap = (int)v),
-            Whole("ArmourCap", "Highest Athletics an armour piece can ask.", 0, 330, s => s.ArmourCap, (s, v) => s.ArmourCap = (int)v),
+            Whole("RequirementAtTier0", "Tier table: requirement of an item of tier 0 (R = table(tier) x category scale, rounded to 5; straight lines between the points).", 0, MaxRequirement, s => s.RequirementAtTier0, (s, v) => s.RequirementAtTier0 = (int)v),
+            Whole("RequirementAtTier1", "Tier table: requirement at tier 1.", 0, MaxRequirement, s => s.RequirementAtTier1, (s, v) => s.RequirementAtTier1 = (int)v),
+            Whole("RequirementAtTier2", "Tier table: requirement at tier 2.", 0, MaxRequirement, s => s.RequirementAtTier2, (s, v) => s.RequirementAtTier2 = (int)v),
+            Whole("RequirementAtTier3", "Tier table: requirement at tier 3.", 0, MaxRequirement, s => s.RequirementAtTier3, (s, v) => s.RequirementAtTier3 = (int)v),
+            Whole("RequirementAtTier4", "Tier table: requirement at tier 4.", 0, MaxRequirement, s => s.RequirementAtTier4, (s, v) => s.RequirementAtTier4 = (int)v),
+            Whole("RequirementAtTier5", "Tier table: requirement at tier 5.", 0, MaxRequirement, s => s.RequirementAtTier5, (s, v) => s.RequirementAtTier5 = (int)v),
+            Whole("RequirementAtTier6", "Tier table: requirement at tier 6 (vanilla shows 'Tier 6' from 5.5 up).", 0, MaxRequirement, s => s.RequirementAtTier6, (s, v) => s.RequirementAtTier6 = (int)v),
+            Num("TopTier", "Tier table: tier of the last point (the best of the best; body armour goes up to about 9).", 6.1, 15, s => s.TopTier, (s, v) => s.TopTier = (float)v),
+            Whole("RequirementAtTopTier", "Tier table: requirement at TopTier and above.", 0, MaxRequirement, s => s.RequirementAtTopTier, (s, v) => s.RequirementAtTopTier = (int)v),
+            Num("MeleeRequirementScale", "Multiplier on the tier table for melee and throwing weapons.", 0, 3, s => s.MeleeRequirementScale, (s, v) => s.MeleeRequirementScale = (float)v),
+            Num("ShieldRequirementScale", "Multiplier on the tier table for shields (Athletics).", 0, 3, s => s.ShieldRequirementScale, (s, v) => s.ShieldRequirementScale = (float)v),
+            Num("ArmourRequirementScale", "Multiplier on the tier table for armour (Athletics).", 0, 3, s => s.ArmourRequirementScale, (s, v) => s.ArmourRequirementScale = (float)v),
+            Num("RangedRequirementScale", "Multiplier on the tier table for bows, crossbows and slings.", 0, 3, s => s.RangedRequirementScale, (s, v) => s.RangedRequirementScale = (float)v),
+            Num("MountRequirementScale", "Multiplier on the tier table for horses (Riding).", 0, 3, s => s.MountRequirementScale, (s, v) => s.MountRequirementScale = (float)v),
             Num("PenaltyExponent", "Penalty = max x shortfall^exponent. 0.5 bites early on a moderate gap, 1 = linear.", 0.05, 5, s => s.PenaltyExponent, (s, v) => s.PenaltyExponent = (float)v),
             Num("MaxWeaponDamagePenalty", "Melee / thrown weapon damage lost at full shortfall (0.15 = -15%).", 0, MaxReduction, s => s.MaxWeaponDamagePenalty, (s, v) => s.MaxWeaponDamagePenalty = (float)v),
             Num("MaxSwingSpeedPenalty", "Swing and thrust speed lost at full shortfall (0.10 = -10%).", 0, MaxReduction, s => s.MaxSwingSpeedPenalty, (s, v) => s.MaxSwingSpeedPenalty = (float)v),

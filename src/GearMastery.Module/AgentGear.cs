@@ -37,13 +37,17 @@ namespace GearMastery
 
         /// <summary>
         /// The agent's shortfall on the item (0 when not covered / met), using the model's effective skill
-        /// (captain perks etc.), read fresh like vanilla's own stats.
+        /// (captain perks etc.), read fresh like vanilla's own stats. The skill is the one of <paramref name="usage"/>
+        /// (bastard sword in 2H mode -> Two Handed); null usage = the item's primary skill.
         /// </summary>
-        public static float Shortfall(AgentStatCalculateModel model, Agent agent, ItemObject? item, out ItemRequirement? requirement)
+        public static float Shortfall(AgentStatCalculateModel model, Agent agent, ItemObject? item, WeaponComponentData? usage,
+            out ItemRequirement? requirement)
         {
             requirement = ItemRequirements.Get(item);
-            if (item == null || requirement == null || !requirement.HasRequirement || requirement.Skill == null) return 0f;
-            return Requirements.Shortfall(requirement.Value, model.GetEffectiveSkill(agent, requirement.Skill));
+            if (item == null || requirement == null || !requirement.HasRequirement) return 0f;
+            var skill = requirement.SkillFor(usage);
+            if (skill == null) return 0f;
+            return Requirements.Shortfall(requirement.Value, model.GetEffectiveSkill(agent, skill));
         }
 
         /// <summary>The foot max-speed multiplier from all worn armour (weight-weighted shortfall).</summary>

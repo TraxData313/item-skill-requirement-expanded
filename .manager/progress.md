@@ -49,7 +49,7 @@ Soft skill requirements on melee weapons, shields and armour: you CAN equip, the
 - **Tooltip**: "Requires: Bow 150 (yours 64)" red/green; for multi-usage weapons a line per skill. Stat lines show the debuffed value with the breakdown, e.g. horse "Speed 55 (60−5)"; same for weapon damage/speed, bow damage, shield, etc. where we penalise.
 
 ### Steps (round 2)
-6. [ ] Requirements v2: tier table, per-usage skills, shields → Athletics, all categories; CSV/offline table check against Toni's anchors.
+6. [x] Requirements v2: tier table, per-usage skills, shields → Athletics, all categories; CSV/offline table check against Toni's anchors.
 7. [ ] Penalties v2: snap + piecewise anchors per category; who-filter (no troops; troops keep vanilla locks); models updated.
 8. [ ] MCM settings replacing settings.json.
 9. [ ] Tooltip v2: own skill, per-usage lines, debuffed stat values with breakdown.
@@ -91,3 +91,28 @@ Soft skill requirements on melee weapons, shields and armour: you CAN equip, the
   - ADDED: settings.json (Core `SettingsFile`: commented writer + dependency-free JSON reader, ranges per key, reductions capped 0.9; module `SettingsLoader` in OnGameStart before ItemRequirements.Reset). trax uses Newtonsoft; not needed here.
   - MountDifficulty: managed readers are only Agent.CheckSkillForMounting (-> Sandbox/CustomBattle CanAgentRideMount, Agent.Mount) and MissionFocusableObjectInformationProvider; Sandbox's rider stats use Riding skill only. Native use unknown (it is a driven property sent to the engine).
   - Open: native use of MountDifficulty and of WeaponData.Difficulty (MissionWeapon.cs:286 passes item.Difficulty to the engine); mount unlock ignores HeroesOnly (troops can mount any horse); arrow penalty follows the launcher in hand at impact; javelin in melee judged by Throwing; MountRefreshLogic relies on MountAgent being set when OnAgentMount fires; tooltip uses raw skill, battle uses effective skill.
+- 2026-11-05 step 6 (round 2): requirements v2. Build 0 errors/0 warnings, 134 tests pass. NOT deployed: the game was running (deploy.ps1 refused, DLLs locked) - run `tools\deploy.ps1` once Toni quits.
+  - Core: `GearMasterySettings` - slopes/caps gone; tier table as plain properties `RequirementAtTier0..6` (0/20/45/75/100/125/150), `TopTier` 7.5, `RequirementAtTopTier` 200; per-category `Melee/Shield/Armour/Ranged/MountRequirementScale` (1.0); `ScaleFor(kind)`, `TierTable()` -> `TierPoint[]`. `Requirements.Requirement(kind, tierf, settings)` = RoundTo5(FromTable x scale), `FromTable` (sorts points, flat outside, ignores NaN points), `RoundTo5` (half away from zero), `DisplayedTier(tierf)`; `FromDifficulty` and the slope overload removed. settings.json keys follow (old keys on Toni's file -> "not a setting" log lines, defaults used; step 8 replaces the file with MCM anyway).
+  - Vanilla tier: `ItemObject.Tier` = (ItemTiers)(clamp(MathF.Round(Tierf), 0, 6) - 1), shown as `Tier + 1` ("Weapon/Armor/Horse Tier N", ItemMenuVM / TooltipRefresherCollection). So displayed "Tier N" = round-half-even(Tierf) clamped 0..6: "Tier 6" = Tierf >= 5.5 (body armour reaches ~9, crafted weapons ~6.8). Crafted Tierf = 0.6 x melee tier + 0.4 x crafting-piece tier (DefaultItemValueModel).
+  - Module `ItemRequirements`: ALL categories from the table (no vanilla Difficulty). `ItemRequirement` now has `Skills` (distinct, primary first), `SkillFor(WeaponComponentData usage)` (by reference, then WeaponDescriptionId, else primary), `SkillForUsage(int index)`, `UsageCount`, `DisplayedTier`; `Skill` = primary (Weapons[0]). Melee/thrown: per-usage RelevantSkill if in {1H, 2H, Polearm, Throwing}, else primary; bows/crossbows/slings: per-usage in {Bow, Crossbow, Throwing}; shields -> **Athletics**; armour Athletics; horses Riding. `ItemRequirements.Shortfall(character, item, usage = null)`.
+  - Coordinator's in-game bug (Balanced Highland Fine Two Handed Sword showed "One Handed 75" on both usage tabs) fixed already here: tooltip takes the usage tab from a new prefix on private `ItemMenuVM.RefreshItemTooltips(ItemVM, ItemVM, int alternativeUsageIndex)` (SetGeneralComponentTooltip runs BEFORE SetWeaponComponentTooltip stores AlternativeUsageIndex, so the property is stale there); compared item uses its usage with the same WeaponDescriptionId. Models: `AgentGear.Shortfall(model, agent, item, usage, out req)` - wielded = CurrentUsageItem, blow = the blow's WeaponComponentData (javelin thrown -> Throwing, held -> its melee skill), ammo = launcher's current usage, horse/shield = null (fixed skill).
+  - CSV dump: `id,name,type,kind,tier,tierf,skills,difficulty,weight,R` (skills ';'-joined).
+  - Calibration (default table, in-game Tierf from Toni's round-1 CSV dump, 1318 items; script in the step-6 scratchpad `calib.py`). Toni's anchors all hit, table kept as designed:
+    | item | shown tier | Tierf | R |
+    |---|---|---|---|
+    | Falx (battania_2hsword_6) | 6 | 6.28 | 160 |
+    | Long Falx / Reaper (falx) | 6 | 6.38 / 6.55 | 165 / 170 |
+    | Highland Fine Two Handed Sword (1H+2H) | 6 | 6.34 | 160 (was 75) |
+    | Highland Scale Armor over Mail, 22.4 kg | 6 | 6.50 | 165 |
+    | Luxury Scale Armor, 20 kg | 6 | 8.00 | 200 |
+    | Gilded Shield-Companion Armor, 21 kg | 6 | 5.60 | 140 |
+    | Heavy Mail Shirt with Wide Belt (battania_woodland_chainmail; "Fine" = modifier, tier ignores it) | 5 | 5.00 | 125 |
+    | Noble Long Bow / Noble Bow | 6 | 6.85 / 6.05 | 180 / 150 |
+    | Bound Crossbow (top) | 6 | 6.19 | 155 |
+    | Pureblood / other noble horses | 6 | 6.80 / 5.69-6.02 | 175 / 140-150 |
+    | Swenryn Pony / Glintor Pony / Battanian Hobby | 4 / 3 / 2 | 3.92 / 2.52 / 1.51 | 100 / 60 / 35 |
+    | Druzhinnik Kite Shield (top) | 6 | 6.33 | 160 |
+    | Backsword / Short Sword (tier 3) | 3 | 3.05 / 3.14 | 75 / 80 |
+    | Hoe (peasant) / Heavy Peasant Crossbow | 2 | 1.73 / 1.80 | 40 / 40 |
+  - Notes: displayed "Tier 6" starts at Tierf 5.5 -> 140-145 at its low edge (Tier 6 median: 1H 145, 2H 155, head 155, body 195; body armour saturates at 200 from Tierf 7.5). Horses lose vanilla's odd difficulties (War Horse D80 -> R10, Storm Charger D100 -> R70: the table follows their Tierf). If Toni wants every displayed "Tier 6" >= 150, move RequirementAtTier6's point to 5.5 (setting) - not done.
+  - **API for step 7**: `ItemRequirements.Get(item)` -> `req.Value` (R), `req.Kind`, `req.SkillFor(usage)` / `req.SkillForUsage(i)`, `req.Skills`; `AgentGear.Shortfall(model, agent, item, usage, out req)` already per-usage. The snap curve replaces `Requirements.Shortfall` + `Penalties.*` (ratio r = skill / R). Tooltip (step 9): `ItemTooltipPatch.SkillOf(vm, req, compared)` + `_usageIndex`.

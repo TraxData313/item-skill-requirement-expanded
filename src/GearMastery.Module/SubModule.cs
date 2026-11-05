@@ -26,7 +26,7 @@ namespace GearMastery
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);
-            ItemRequirements.Settings = SettingsLoader.Load(); // before Reset: the table is rebuilt with these slopes
+            ItemRequirements.Settings = SettingsLoader.Load(); // before Reset: the table is rebuilt with these settings
             ItemRequirements.Reset();
             AgentGear.Reset();
             try
@@ -50,6 +50,7 @@ namespace GearMastery
             if (_patched) return;
             _patched = true;
             Patch("CharacterHelper.CanUseItem postfix (bows / crossbows / slings / horses equippable)", h => CanUseItemPatch.Apply(h));
+            Patch("ItemMenuVM.RefreshItemTooltips prefix (usage tab -> per-usage requirement skill)", h => ItemTooltipPatch.ApplyUsageIndex(h));
             Patch("ItemMenuVM.AddSkillRequirement prefix (requirement line coloured by skill < R)", h => ItemTooltipPatch.ApplyRequirementLine(h));
             Patch("ItemMenuVM.SetGeneralComponentTooltip postfix (requirement + penalty lines)", h => ItemTooltipPatch.ApplyGeneralTooltip(h));
         }

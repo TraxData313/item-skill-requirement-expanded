@@ -1,33 +1,70 @@
 using System;
+using System.Collections.Generic;
 
 namespace GearMastery.Core
 {
-    /// <summary>Item tier (or vanilla difficulty) to skill requirement, and skill to shortfall. Pure maths.</summary>
+    /// <summary>Item tier to skill requirement, and skill to shortfall. Pure maths.</summary>
     public static class Requirements
     {
         /// <summary>
-        /// Tier formula for <see cref="SkillKind.Weapon"/>, <see cref="SkillKind.Shield"/>, <see cref="SkillKind.Armour"/>:
-        /// R = slope x tierf rounded to the nearest 5 (halves away from zero), clamped to [0, cap].
-        /// Negative, NaN or infinite tiers ask nothing. Returns 0 for Ranged/Mount (use <see cref="FromDifficulty"/>).
+        /// R for an item of this category: round-to-5(table(tierf) x category scale), never below 0. The same tier
+        /// table serves every category (melee, shields, armour, bows/crossbows/slings, horses); only the scale differs.
+        /// NaN / infinite tiers ask nothing.
         /// </summary>
         public static int Requirement(SkillKind kind, float tierf, GearMasterySettings settings)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
-            return Requirement(tierf, settings.SlopeFor(kind), settings.CapFor(kind));
+            float scale = settings.ScaleFor(kind);
+            if (float.IsNaN(scale) || float.IsInfinity(scale) || scale <= 0f) return 0;
+            return RoundTo5(FromTable(tierf, settings.TierTable()) * scale);
         }
 
-        public static int Requirement(float tierf, float slope, int cap)
+        /// <summary>
+        /// Piecewise-linear table lookup: interpolates between the two points around <paramref name="tierf"/>, held
+        /// flat at the first / last point outside them. Points are sorted by tier here (input order does not matter);
+        /// points with a NaN/infinite tier are ignored. 0 for an empty table or a NaN/infinite tier.
+        /// </summary>
+        public static float FromTable(float tierf, IReadOnlyList<TierPoint> points)
         {
-            if (float.IsNaN(tierf) || float.IsInfinity(tierf) || tierf <= 0f) return 0;
-            if (float.IsNaN(slope) || slope <= 0f || cap <= 0) return 0;
-            double raw = (double)slope * tierf;
-            if (raw >= cap) return cap;
-            int rounded = (int)(Math.Round(raw / 5.0, MidpointRounding.AwayFromZero) * 5.0);
-            return Math.Max(0, Math.Min(cap, rounded));
+            if (points == null || float.IsNaN(tierf) || float.IsInfinity(tierf)) return 0f;
+            var sorted = new List<TierPoint>(points.Count);
+            foreach (var p in points)
+                if (!float.IsNaN(p.Tier) && !float.IsInfinity(p.Tier) && !float.IsNaN(p.Requirement) && !float.IsInfinity(p.Requirement))
+                    sorted.Add(p);
+            if (sorted.Count == 0) return 0f;
+            sorted.Sort((a, b) => a.Tier.CompareTo(b.Tier));
+
+            if (tierf <= sorted[0].Tier) return sorted[0].Requirement;
+            var last = sorted[sorted.Count - 1];
+            if (tierf >= last.Tier) return last.Requirement;
+            for (int i = 1; i < sorted.Count; i++)
+            {
+                var hi = sorted[i];
+                if (tierf > hi.Tier) continue;
+                var lo = sorted[i - 1];
+                float span = hi.Tier - lo.Tier;
+                if (span <= 0f) return hi.Requirement; // duplicate tier: take the later point
+                return lo.Requirement + (hi.Requirement - lo.Requirement) * (tierf - lo.Tier) / span;
+            }
+            return last.Requirement;
         }
 
-        /// <summary>Bows, crossbows, slings and horses: R is vanilla's own item.Difficulty, floored at 0.</summary>
-        public static int FromDifficulty(int difficulty) => difficulty > 0 ? difficulty : 0;
+        /// <summary>Nearest multiple of 5 (halves away from zero), floored at 0; NaN asks nothing, huge values saturate.</summary>
+        public static int RoundTo5(double value)
+        {
+            if (double.IsNaN(value) || value <= 0) return 0;
+            if (value >= 1e9) return 1000000000;
+            return (int)(Math.Round(value / 5.0, MidpointRounding.AwayFromZero) * 5.0);
+        }
+
+        /// <summary>Vanilla's displayed "Tier N" (ItemObject.Tier + 1): round(Tierf) clamped to 0..6. MathF.Round
+        /// rounds halves to even, like Math.Round's default.</summary>
+        public static int DisplayedTier(float tierf)
+        {
+            if (float.IsNaN(tierf)) return 0;
+            double r = Math.Round((double)tierf);
+            return r < 0 ? 0 : r > 6 ? 6 : (int)r;
+        }
 
         /// <summary>
         /// How far below the requirement the wielder is, as a share of it: clamp((R - skill) / R, 0, 1).

@@ -26,18 +26,19 @@ public class SettingsFileTests
             Assert.Contains("\"" + def.Key + "\":", text);
         Assert.Contains("\"MaxWeaponDamagePenalty\": 0.15", text);
         Assert.Contains("\"HeroesOnly\": false", text);
-        Assert.Contains("\"WeaponCap\": 100", text);
+        Assert.Contains("\"RequirementAtTier6\": 150", text);
     }
 
     [Fact]
     public void CustomValuesRoundTrip()
     {
-        var s = new GearMasterySettings { MaxWeaponDamagePenalty = 0.3f, HeroesOnly = true, WeaponCap = 150, PenaltyExponent = 1f };
+        var s = new GearMasterySettings { MaxWeaponDamagePenalty = 0.3f, HeroesOnly = true, RequirementAtTopTier = 180, TopTier = 8f, PenaltyExponent = 1f };
         var r = SettingsFile.Read(SettingsFile.Write(s));
         Assert.Empty(r.Issues);
         Assert.Equal(0.3f, r.Settings.MaxWeaponDamagePenalty, 5);
         Assert.True(r.Settings.HeroesOnly);
-        Assert.Equal(150, r.Settings.WeaponCap);
+        Assert.Equal(180, r.Settings.RequirementAtTopTier);
+        Assert.Equal(8f, r.Settings.TopTier, 5);
         Assert.Equal(1f, r.Settings.PenaltyExponent, 5);
     }
 
@@ -73,11 +74,11 @@ public class SettingsFileTests
     [Fact]
     public void WholeNumberAndBoolAreChecked()
     {
-        var r = SettingsFile.Read("{\"WeaponCap\": 50.5, \"HeroesOnly\": 1, \"ArmourCap\": 80}");
+        var r = SettingsFile.Read("{\"RequirementAtTier6\": 50.5, \"HeroesOnly\": 1, \"RequirementAtTier5\": 80}");
         Assert.Equal(2, r.Issues.Count);
-        Assert.Equal(100, r.Settings.WeaponCap);
+        Assert.Equal(150, r.Settings.RequirementAtTier6);
         Assert.False(r.Settings.HeroesOnly);
-        Assert.Equal(80, r.Settings.ArmourCap);
+        Assert.Equal(80, r.Settings.RequirementAtTier5);
     }
 
     [Fact]
@@ -92,31 +93,31 @@ public class SettingsFileTests
     [Fact]
     public void DuplicateKeyLastWins()
     {
-        var r = SettingsFile.Read("{\"ShieldSlope\": 8, \"ShieldSlope\": 9}");
+        var r = SettingsFile.Read("{\"ShieldRequirementScale\": 0.8, \"ShieldRequirementScale\": 0.9}");
         Assert.Single(r.Issues);
-        Assert.Equal(9f, r.Settings.ShieldSlope, 5);
+        Assert.Equal(0.9f, r.Settings.ShieldRequirementScale, 5);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData("not json")]
-    [InlineData("{\"WeaponSlope\": 12")]
-    [InlineData("{\"WeaponSlope\": 0,15}")]   // decimal comma
-    [InlineData("{\"WeaponSlope\" 12}")]
+    [InlineData("{\"TopTier\": 7.5")]
+    [InlineData("{\"TopTier\": 7,5}")]   // decimal comma
+    [InlineData("{\"TopTier\" 7.5}")]
     [InlineData("[1, 2]")]
     [InlineData("{} trailing")]
     public void BrokenFileMeansAllDefaultsAndAnError(string text)
     {
         var r = SettingsFile.Read(text);
         Assert.NotNull(r.Error);
-        Assert.Equal(12f, r.Settings.WeaponSlope, 5);
+        Assert.Equal(7.5f, r.Settings.TopTier, 5);
         Assert.Equal(SettingsFile.All.Count, r.Missing.Count);
     }
 
     [Fact]
     public void ErrorNamesTheLine()
     {
-        var r = SettingsFile.Read("{\n\"WeaponSlope\": 12,\n\"ShieldSlope\": oops\n}");
+        var r = SettingsFile.Read("{\n\"TopTier\": 7.5,\n\"ShieldRequirementScale\": oops\n}");
         Assert.StartsWith("line 3", r.Error);
     }
 
@@ -126,9 +127,9 @@ public class SettingsFileTests
     [Fact]
     public void ByteOrderMarkIsFine()
     {
-        var r = SettingsFile.Read("﻿{\"WeaponSlope\": 11}");
+        var r = SettingsFile.Read("﻿{\"TopTier\": 8}");
         Assert.Null(r.Error);
-        Assert.Equal(11f, r.Settings.WeaponSlope, 5);
+        Assert.Equal(8f, r.Settings.TopTier, 5);
     }
 
     [Fact]

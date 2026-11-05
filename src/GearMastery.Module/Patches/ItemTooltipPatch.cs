@@ -55,6 +55,21 @@ namespace GearMastery.Patches
             harmony.Patch(target, prefix: new HarmonyMethod(typeof(ItemTooltipPatch), nameof(AddSkillRequirementPrefix)));
         }
 
+        /// <summary>Remembers the usage tab being drawn: RefreshItemTooltips(item, compared, alternativeUsageIndex) runs
+        /// SetGeneralComponentTooltip (our lines) BEFORE SetWeaponComponentTooltip stores the index in
+        /// AlternativeUsageIndex, so the public property can still hold the previous item's tab at that point.</summary>
+        public static void ApplyUsageIndex(Harmony harmony)
+        {
+            var target = AccessTools.Method(typeof(ItemMenuVM), "RefreshItemTooltips", new[] { typeof(ItemVM), typeof(ItemVM), typeof(int) })
+                ?? throw new MissingMethodException("ItemMenuVM.RefreshItemTooltips(ItemVM, ItemVM, int) not found");
+            harmony.Patch(target, prefix: new HarmonyMethod(typeof(ItemTooltipPatch), nameof(RefreshItemTooltipsPrefix)));
+        }
+
+        // Usage tab of the tooltip being built (UI thread only). 0 = primary usage, vanilla's default.
+        private static int _usageIndex;
+
+        private static void RefreshItemTooltipsPrefix(int alternativeUsageIndex) => _usageIndex = alternativeUsageIndex;
+
         public static void ApplyGeneralTooltip(Harmony harmony)
         {
             var target = AccessTools.Method(typeof(ItemMenuVM), "SetGeneralComponentTooltip", Type.EmptyTypes)
@@ -70,7 +85,7 @@ namespace GearMastery.Patches
             {
                 var req = Covered(itemVm);
                 if (req == null || itemProperties == null || CharacterRef == null) return true;
-                itemProperties.Add(RequirementLine(req, CharacterRef(__instance), isComparison));
+                itemProperties.Add(RequirementLine(req, SkillOf(__instance, req, isComparison), CharacterRef(__instance), isComparison));
                 return false;
             }
             catch (Exception e)
@@ -102,13 +117,13 @@ namespace GearMastery.Patches
                     && (targetItem.Difficulty > 0 || (comparing && comparedItem!.Difficulty > 0));
                 if (!vanillaDrew)
                 {
-                    __instance.TargetItemProperties.Add(targetReq != null ? RequirementLine(targetReq, character, false) : Blank());
+                    __instance.TargetItemProperties.Add(targetReq != null ? RequirementLine(targetReq, SkillOf(__instance, targetReq, false), character, false) : Blank());
                     if (comparing)
-                        __instance.ComparedItemProperties.Add(comparedReq != null ? RequirementLine(comparedReq, character, true) : Blank());
+                        __instance.ComparedItemProperties.Add(comparedReq != null ? RequirementLine(comparedReq, SkillOf(__instance, comparedReq, true), character, true) : Blank());
                 }
 
-                string? targetPenalty = PenaltyText(targetReq, character);
-                string? comparedPenalty = comparing ? PenaltyText(comparedReq, character) : null;
+                string? targetPenalty = targetReq != null ? PenaltyText(targetReq, SkillOf(__instance, targetReq, false), character) : null;
+                string? comparedPenalty = comparing && comparedReq != null ? PenaltyText(comparedReq, SkillOf(__instance, comparedReq, true), character) : null;
                 if (targetPenalty == null && comparedPenalty == null) return;
                 __instance.TargetItemProperties.Add(targetPenalty != null
                     ? new ItemMenuTooltipPropertyVM(UnskilledText().ToString(), targetPenalty, 0, UIColors.NegativeIndicator)
@@ -132,24 +147,38 @@ namespace GearMastery.Patches
             return req != null && req.HasRequirement && req.Skill != null ? req : null;
         }
 
+        /// <summary>
+        /// The skill for the usage tab on show: the target item's tab index; for the compared item, its usage of the same
+        /// kind (WeaponDescriptionId, as vanilla pairs them in GetComparedWeapon), else its primary skill.
+        /// </summary>
+        private static SkillObject SkillOf(ItemMenuVM vm, ItemRequirement req, bool compared)
+        {
+            if (req.UsageCount == 0) return req.Skill;
+            if (!compared) return req.SkillForUsage(_usageIndex);
+            var targetItem = TargetRef?.Invoke(vm)?.ItemRosterElement.EquipmentElement.Item;
+            var weapons = targetItem?.Weapons;
+            var usage = weapons != null && _usageIndex >= 0 && _usageIndex < weapons.Count ? weapons[_usageIndex] : null;
+            return req.SkillFor(usage);
+        }
+
         /// <summary>Vanilla's look: "Requires: " (target side only) + "&lt;Skill&gt; &lt;R&gt;", green when met or no
         /// character, red when short.</summary>
-        private static ItemMenuTooltipPropertyVM RequirementLine(ItemRequirement req, BasicCharacterObject? character, bool isComparison)
+        private static ItemMenuTooltipPropertyVM RequirementLine(ItemRequirement req, SkillObject skill, BasicCharacterObject? character, bool isComparison)
         {
             bool met = character == null
-                || !TooltipPenalties.IsShort(req.Value, ItemRequirements.GetSkill(character, req.Skill));
+                || !TooltipPenalties.IsShort(req.Value, ItemRequirements.GetSkill(character, skill));
             string definition = isComparison ? "" : RequiresText().ToString();
-            string value = req.Skill.Name + " " + req.Value;
+            string value = skill.Name + " " + req.Value;
             return new ItemMenuTooltipPropertyVM(definition, value, 0, met ? UIColors.PositiveIndicator : UIColors.NegativeIndicator);
         }
 
         private static ItemMenuTooltipPropertyVM Blank() => new ItemMenuTooltipPropertyVM("", "", 0);
 
         /// <summary>"-12% damage, -8% swing speed, -12% handling", or null when not short / nothing rounds above 0%.</summary>
-        private static string? PenaltyText(ItemRequirement? req, BasicCharacterObject? character)
+        private static string? PenaltyText(ItemRequirement req, SkillObject skillObject, BasicCharacterObject? character)
         {
-            if (req == null || character == null) return null;
-            int skill = ItemRequirements.GetSkill(character, req.Skill);
+            if (character == null) return null;
+            int skill = ItemRequirements.GetSkill(character, skillObject);
             if (!TooltipPenalties.IsShort(req.Value, skill)) return null;
             var parts = TooltipPenalties.For(req.Kind, Requirements.Shortfall(req.Value, skill), ItemRequirements.Settings);
             if (parts.Count == 0) return null;

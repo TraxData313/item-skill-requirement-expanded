@@ -22,8 +22,8 @@ public class PenaltiesTests
         Assert.Equal(0.10f, Defaults.MaxHorseManeuverPenalty);
         Assert.Equal(0.5f, Defaults.PenaltyExponent);
         Assert.False(Defaults.HeroesOnly);
-        Assert.Equal(12f, Defaults.WeaponSlope);
-        Assert.Equal(10f, Defaults.ArmourSlope);
+        Assert.Equal(150, Defaults.RequirementAtTier6);
+        Assert.Equal(1f, Defaults.MeleeRequirementScale);
     }
 
     [Fact]

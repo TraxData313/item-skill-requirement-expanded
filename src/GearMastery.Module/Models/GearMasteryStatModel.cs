@@ -123,10 +123,10 @@ namespace GearMastery.Models
             if (!AgentGear.Pays(agent)) return;
             var settings = ItemRequirements.Settings;
 
-            var item = AgentGear.WieldedItem(agent, out _);
+            var item = AgentGear.WieldedItem(agent, out var usage);
             if (item != null)
             {
-                float s = AgentGear.Shortfall(this, agent, item, out var req);
+                float s = AgentGear.Shortfall(this, agent, item, usage, out var req);
                 if (req != null && s > 0f)
                 {
                     var m = CombatPenalties.ForWielded(req.Kind, s, settings);
@@ -150,12 +150,12 @@ namespace GearMastery.Models
 
         private void ApplyMount(Agent mount, AgentDrivenProperties p)
         {
-            p.MountDifficulty = 0f; // vanilla's hard lock lifted - our own table still knows the horse's Difficulty
+            p.MountDifficulty = 0f; // vanilla's hard lock lifted - our own tier table judges the rider instead
             var rider = mount.RiderAgent;
             if (!AgentGear.Pays(rider)) return;
             var horse = mount.SpawnEquipment?[EquipmentIndex.Horse].Item;
             if (horse == null) return;
-            float s = AgentGear.Shortfall(this, rider!, horse, out var req);
+            float s = AgentGear.Shortfall(this, rider!, horse, null, out var req);
             if (req == null || req.Kind != SkillKind.Mount || s <= 0f) return;
             var settings = ItemRequirements.Settings;
             p.MountSpeed *= Penalties.HorseSpeedMultiplier(s, settings);
@@ -169,9 +169,11 @@ namespace GearMastery.Models
             {
                 if (weapon == null || !AgentGear.Pays(agent)) return value;
                 bool ammo = weapon.IsAmmo;
-                ItemObject? item = ammo ? AgentGear.WieldedItem(agent, out _) : AgentGear.ItemOf(agent, weapon);
+                // Ammo: the launcher in hand and ITS usage; otherwise the blow's own usage (javelin thrown -> Throwing).
+                WeaponComponentData? usage = weapon;
+                ItemObject? item = ammo ? AgentGear.WieldedItem(agent, out usage) : AgentGear.ItemOf(agent, weapon);
                 if (item == null) return value;
-                float s = AgentGear.Shortfall(this, agent, item, out var req);
+                float s = AgentGear.Shortfall(this, agent, item, usage, out var req);
                 if (req == null || s <= 0f) return value;
                 return value * CombatPenalties.DamageMultiplier(req.Kind, ammo, s, ItemRequirements.Settings);
             }
@@ -190,7 +192,7 @@ namespace GearMastery.Models
                 if (weapon == null || !weapon.IsRangedWeapon || !AgentGear.Pays(agent)) return value;
                 var item = AgentGear.ItemOf(agent, weapon);
                 if (item == null) return value;
-                float s = AgentGear.Shortfall(this, agent, item, out var req);
+                float s = AgentGear.Shortfall(this, agent, item, weapon, out var req);
                 if (req == null || req.Kind != SkillKind.Ranged || s <= 0f) return value;
                 return value * Penalties.InaccuracyMultiplier(s, ItemRequirements.Settings);
             }

@@ -29,7 +29,7 @@ namespace GearMastery.Models
                 if (item == null) return damage;
                 var model = MissionGameModels.Current?.AgentStatCalculateModel;
                 if (model == null) return damage;
-                float s = AgentGear.Shortfall(model, defender!, item, out var req);
+                float s = AgentGear.Shortfall(model, defender!, item, null, out var req);
                 if (req == null || req.Kind != SkillKind.Shield || s <= 0f) return damage;
                 return damage * Penalties.ShieldDamageTakenMultiplier(s, ItemRequirements.Settings);
             }

@@ -10,12 +10,12 @@ in game; no remote yet. Player docs: `README.md`.
 
 ## Design (agreed with Toni, 2026-11-05)
 
-- Requirement `R = round-to-5(slope x item.Tierf)`, clamped >= 0. Slope 12 for weapons and shields (vanilla bows sit
-  at D ~ 12 x tier), slope 10 for armour (else heavy body armour would ask 110).
-- Skill: melee weapon = its `RelevantSkill` (One Handed / Two Handed / Polearm / Throwing); shields = One Handed;
-  armour = Athletics.
-- Bows, crossbows, slings and horses are soft too (Toni, 2026-11-05): R = vanilla `item.Difficulty`, skill =
-  `item.RelevantSkill` (Bow / Crossbow / Throwing / Riding). Vanilla's hard locks on them get lifted in steps 3/4.
+- Requirement (round 2, step 6): `R = round-to-5(table(item.Tierf) x category scale)` for EVERY category (melee,
+  shields, armour, bows/crossbows/slings, horses - vanilla Difficulty no longer used). Table points
+  {0:0, 1:20, 2:45, 3:75, 4:100, 5:125, 6:150, 7.5:200}, flat outside; scales default 1.0. Vanilla's displayed
+  "Tier N" = round(Tierf) clamped 0..6, so "Tier 6" = Tierf >= 5.5.
+- Skill: weapons per USAGE (`ItemRequirement.SkillFor(usage)`: bastard sword 1H/2H, javelin Throwing/held skill);
+  shields and armour = Athletics; bows Bow, crossbows Crossbow, slings Throwing, horses Riding.
 - `shortfall = clamp((R - skill) / R, 0, 1)`; penalty = max x shortfall^0.5 (`PenaltyExponent`). Penalties are MILD
   on purpose (an expensive sword unskilled ~ a standard sword); maxima are settings in `GearMasterySettings`:
   - weapons: damage -15%, swing speed -10%, handling -15%;
