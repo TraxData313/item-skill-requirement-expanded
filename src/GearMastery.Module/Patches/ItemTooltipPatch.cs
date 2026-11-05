@@ -14,7 +14,8 @@ namespace GearMastery.Patches
 {
     /// <summary>
     /// The inventory item tooltip (ItemMenuVM), round 2 (step 9):
-    /// - "Requires: &lt;Skill&gt; &lt;R&gt; (yours &lt;n&gt;)" red / green for every item we cover, per usage tab.
+    /// - "Requires: &lt;Skill&gt; &lt;R&gt; (yours &lt;n&gt;)" red / green for every item we cover, per usage tab - only
+    ///   when the who-toggles cover the hero (else the whole tooltip stays vanilla).
     /// - When the character is short AND the who-toggles cover him: vanilla's own stat rows carry the value after the
     ///   penalty with the breakdown ("Swing Damage: 37 (99-62) Cut", horse "Speed: 39 (52-13)"), computed by
     ///   Core <see cref="TooltipStats"/> from the same functions the battle models use. In comparison mode each column
@@ -133,7 +134,9 @@ namespace GearMastery.Patches
             {
                 var req = Covered(itemVm);
                 if (req == null || itemProperties == null || CharacterRef == null) return true;
-                itemProperties.Add(RequirementLine(req, SkillOf(__instance, req, isComparison), CharacterRef(__instance), isComparison));
+                var character = CharacterRef(__instance);
+                if (!Applies(character)) return true; // who-toggle off: vanilla's line (and vanilla's lock colour)
+                itemProperties.Add(RequirementLine(req, SkillOf(__instance, req, isComparison), character, isComparison));
                 return false;
             }
             catch (Exception e)
@@ -155,6 +158,7 @@ namespace GearMastery.Patches
                 bool comparing = __instance.IsComparing && compared?.ItemRosterElement.EquipmentElement.Item != null;
                 var comparedItem = comparing ? compared!.ItemRosterElement.EquipmentElement.Item : null;
                 var character = CharacterRef(__instance);
+                if (!Applies(character)) return; // who-toggle off: the tooltip stays vanilla
 
                 var targetReq = Covered(target);
                 var comparedReq = comparing ? Covered(compared) : null;
@@ -182,6 +186,11 @@ namespace GearMastery.Patches
                 ModLog.ErrorOnce("ItemTooltipPatch.SetGeneralComponentTooltip", e);
             }
         }
+
+        /// <summary>Does the mod apply to the hero whose inventory is open? No character (a trade screen without one):
+        /// yes, the requirement is shown green as plain information. Otherwise the who-toggles decide; an uncovered
+        /// hero sees vanilla's tooltip, matching vanilla's lock in <see cref="CanUseItemPatch"/>.</summary>
+        private static bool Applies(BasicCharacterObject? character) => character == null || AgentGear.CharacterPays(character);
 
         private static bool HasNoStatRow(SkillKind kind) => kind == SkillKind.Shield || kind == SkillKind.Armour;
 

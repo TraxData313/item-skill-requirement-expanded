@@ -13,7 +13,8 @@ namespace GearMastery.Patches
     /// Postfix on <c>CharacterHelper.CanUseItem(BasicCharacterObject, EquipmentElement, out TextObject)</c>
     /// (the 2-argument overload calls this one). Vanilla says no when skill &lt; item.Difficulty, OR the item is
     /// gender-locked, a dragon banner piece, or an unrideable horse. When it said no, the item is one we make soft
-    /// (kind Ranged / Mount) and none of the OTHER reasons hold, the answer becomes yes with no reason.
+    /// (kind Ranged / Mount), the character is covered by the who-toggles (<see cref="AgentGear.CharacterPays"/>) and
+    /// none of the OTHER reasons hold, the answer becomes yes with no reason.
     ///
     /// Callers (decompile, 1.4.8): SPInventoryVM.CanCharacterUseItem (equip lock + item dimming) and
     /// ItemMenuVM.AddSkillRequirement (the red / green colour - replaced by <see cref="ItemTooltipPatch"/>, which
@@ -37,6 +38,9 @@ namespace GearMastery.Patches
             {
                 var item = itemRosterElement.Item;
                 if (item == null || currentCharacter == null) return;
+                // Only for characters the who-filter covers: troops (other mods ask for them too) and heroes whose
+                // toggle is off keep vanilla's hard lock, as they keep vanilla's mount lock in battle.
+                if (!AgentGear.CharacterPays(currentCharacter)) return;
                 var req = ItemRequirements.Get(item);
                 if (req == null || (req.Kind != SkillKind.Ranged && req.Kind != SkillKind.Mount)) return;
                 if (BlockedForOtherReason(currentCharacter, item)) return;
