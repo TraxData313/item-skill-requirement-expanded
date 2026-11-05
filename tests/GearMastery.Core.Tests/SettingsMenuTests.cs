@@ -108,7 +108,7 @@ public class SettingsMenuTests
     [Fact]
     public void GroupsAreInPageOrderAndEachHasSettings()
     {
-        Assert.Equal(new[] { "Who is affected", "Requirements", "Penalty curve", "Melee weapons", "Armour", "Shields",
+        Assert.Equal(new[] { "Who is affected", "Requirements", "Penalty curve", "Starter gear", "Melee weapons", "Armour", "Shields",
             "Bows, crossbows and slings", "Horses", "Debug" }, SettingsMenu.Groups.Select(g => g.Name));
         Assert.Equal(Enumerable.Range(0, SettingsMenu.Groups.Count), SettingsMenu.Groups.Select(g => g.Order));
         foreach (var g in SettingsMenu.Groups)

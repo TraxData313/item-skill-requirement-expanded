@@ -120,15 +120,16 @@ namespace GearMastery.Core
         public static readonly MenuGroup Who = new MenuGroup("Who is affected", 0);
         public static readonly MenuGroup Requirements = new MenuGroup("Requirements", 1);
         public static readonly MenuGroup Curve = new MenuGroup("Penalty curve", 2);
-        public static readonly MenuGroup Melee = new MenuGroup("Melee weapons", 3);
-        public static readonly MenuGroup Armour = new MenuGroup("Armour", 4);
-        public static readonly MenuGroup Shields = new MenuGroup("Shields", 5);
-        public static readonly MenuGroup Ranged = new MenuGroup("Bows, crossbows and slings", 6);
-        public static readonly MenuGroup Mounts = new MenuGroup("Horses", 7);
-        public static readonly MenuGroup Debug = new MenuGroup("Debug", 8);
+        public static readonly MenuGroup Starter = new MenuGroup("Starter gear", 3);
+        public static readonly MenuGroup Melee = new MenuGroup("Melee weapons", 4);
+        public static readonly MenuGroup Armour = new MenuGroup("Armour", 5);
+        public static readonly MenuGroup Shields = new MenuGroup("Shields", 6);
+        public static readonly MenuGroup Ranged = new MenuGroup("Bows, crossbows and slings", 7);
+        public static readonly MenuGroup Mounts = new MenuGroup("Horses", 8);
+        public static readonly MenuGroup Debug = new MenuGroup("Debug", 9);
 
         public static IReadOnlyList<MenuGroup> Groups { get; } =
-            new[] { Who, Requirements, Curve, Melee, Armour, Shields, Ranged, Mounts, Debug };
+            new[] { Who, Requirements, Curve, Starter, Melee, Armour, Shields, Ranged, Mounts, Debug };
 
         private const string LowHint = " Just below the requirement (skill/requirement close to 100%).";
         private const string MidHint = " At the curve's mid point (default: skill at 60% of the requirement).";
@@ -183,6 +184,10 @@ namespace GearMastery.Core
                 "Skill share where every penalty reaches its High value; held there below it. Must be below the mid point, otherwise both go back to 60% / 30%. Default 30%.",
                 s => s.PenaltyHighRatio, (s, v) => s.PenaltyHighRatio = (float)v, percent: true),
 
+            // ---- Starter gear (same ids as when they sat under Ranged: MCM keeps saved values by id) ----
+            Whole(Starter, nameof(GearMasterySettings.StarterGearMaxTier), "Starter gear max tier", 0, 3, "Tier 1 gear has no easier option, so its penalties stop here: every item of this tier or lower (the tier the game shows) - weapons, shields, armour, bows, crossbows, slings and horses - has each penalty capped at 'Starter gear max penalty', so a hero with no skill can still learn on it. Default 1.", s => s.StarterGearMaxTier, (s, v) => s.StarterGearMaxTier = v),
+            Pct(Starter, nameof(GearMasterySettings.StarterGearMaxPenalty), "Starter gear max penalty", 100, "Tier 1 gear has no easier option, so its penalties stop here: damage, speed, handling, maneuver lost and extra inaccuracy or shield damage taken each stop at this on starter gear (armour: per piece, so a full starter set too). 100% = no cap. Default 20%.", s => s.StarterGearMaxPenalty, (s, v) => s.StarterGearMaxPenalty = v),
+
             // ---- Melee ----
             Pct(Melee, nameof(GearMasterySettings.MeleeDamagePenaltyLow), "Damage lost - Low", MaxReductionPercent, "Melee and thrown weapon damage lost." + LowHint + " Default 25%.", s => s.MeleeDamagePenaltyLow, (s, v) => s.MeleeDamagePenaltyLow = v),
             Pct(Melee, nameof(GearMasterySettings.MeleeDamagePenaltyMid), "Damage lost - Mid", MaxReductionPercent, "Melee and thrown weapon damage lost." + MidHint + " Default 50%.", s => s.MeleeDamagePenaltyMid, (s, v) => s.MeleeDamagePenaltyMid = v),
@@ -214,8 +219,6 @@ namespace GearMastery.Core
             Pct(Ranged, nameof(GearMasterySettings.RangedInaccuracyBonusLow), "Extra inaccuracy - Low", MaxBonusPercent, "Extra aim spread." + LowHint + " Default 25%.", s => s.RangedInaccuracyBonusLow, (s, v) => s.RangedInaccuracyBonusLow = v),
             Pct(Ranged, nameof(GearMasterySettings.RangedInaccuracyBonusMid), "Extra inaccuracy - Mid", MaxBonusPercent, "Extra aim spread." + MidHint + " Default 50%.", s => s.RangedInaccuracyBonusMid, (s, v) => s.RangedInaccuracyBonusMid = v),
             Pct(Ranged, nameof(GearMasterySettings.RangedInaccuracyBonusHigh), "Extra inaccuracy - High", MaxBonusPercent, "Extra aim spread." + HighHint + " Default 75%.", s => s.RangedInaccuracyBonusHigh, (s, v) => s.RangedInaccuracyBonusHigh = v),
-            Whole(Ranged, nameof(GearMasterySettings.StarterGearMaxTier), "Starter gear max tier", 0, 3, "Bows, crossbows and slings of this tier or lower (the tier the game shows) are starter gear: their penalties are capped at 'Starter gear max penalty', so a hero with no skill can still learn on them. Default 1.", s => s.StarterGearMaxTier, (s, v) => s.StarterGearMaxTier = v),
-            Pct(Ranged, nameof(GearMasterySettings.StarterGearMaxPenalty), "Starter gear max penalty", 100, "The most a starter bow, crossbow or sling can cost you: damage lost, reload and draw speed lost and extra inaccuracy each stop here. 100% = no cap. Default 20%.", s => s.StarterGearMaxPenalty, (s, v) => s.StarterGearMaxPenalty = v),
 
             // ---- Mounts ----
             Pct(Mounts, nameof(GearMasterySettings.MountSpeedPenaltyLow), "Speed lost - Low", MaxReductionPercent, "Horse speed lost (the rider's Riding vs the horse)." + LowHint + " Default 25%.", s => s.MountSpeedPenaltyLow, (s, v) => s.MountSpeedPenaltyLow = v),

@@ -226,17 +226,93 @@ public class CombatPenaltiesTests
     }
 
     [Fact]
-    public void StarterCap_OnlyLaunchersAtOrBelowTheMaxTier()
+    public void StarterCap_EveryItemAtOrBelowTheMaxTier()
     {
-        Assert.Equal(0.2f, CombatPenalties.StarterCap(SkillKind.Ranged, 0, Defaults));
-        Assert.Equal(0.2f, CombatPenalties.StarterCap(SkillKind.Ranged, 1, Defaults));
-        Assert.Equal(1f, CombatPenalties.StarterCap(SkillKind.Ranged, 2, Defaults));
-        Assert.Equal(1f, CombatPenalties.StarterCap(SkillKind.Ranged, null, Defaults));
-        Assert.Equal(1f, CombatPenalties.StarterCap(SkillKind.Weapon, 1, Defaults));
-        Assert.Equal(1f, CombatPenalties.StarterCap(SkillKind.Mount, 1, Defaults));
+        Assert.Equal(0.2f, CombatPenalties.StarterCap(0, Defaults));
+        Assert.Equal(0.2f, CombatPenalties.StarterCap(1, Defaults));
+        Assert.Equal(1f, CombatPenalties.StarterCap(2, Defaults));
+        Assert.Equal(1f, CombatPenalties.StarterCap(null, Defaults));
         var tier3 = new GearMasterySettings { StarterGearMaxTier = 3 };
-        Assert.Equal(0.2f, CombatPenalties.StarterCap(SkillKind.Ranged, 3, tier3));
-        // A thrown javelin (Weapon kind) is not starter gear: full ranged anchors.
-        Assert.Equal(Penalties.RangedDamageMultiplier(1f, Defaults), CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, 1f, Defaults, true, 1));
+        Assert.Equal(0.2f, CombatPenalties.StarterCap(3, tier3));
+        // A thrown tier 1 javelin is starter gear too (Toni, 2026-11-05: all tier 1 gear).
+        Assert.Equal(0.8f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, 1f, Defaults, true, 1));
+        Assert.Equal(1.2f, CombatPenalties.InaccuracyMultiplier(SkillKind.Weapon, true, 1f, Defaults, 1));
+    }
+
+    // ---- starter cap for all tier 1 gear (Toni, 2026-11-05: spears have no tier 0 either) ----
+
+    private static float ShortAtZero(SkillKind kind, float tierf) =>
+        Requirements.Shortfall(Requirements.Requirement(kind, tierf, Defaults), 0);
+
+    [Fact]
+    public void TierOneSpearAtSkillZero_DamageMinusTwentyPercent()
+    {
+        Assert.Equal(1, Requirements.DisplayedTier(1f));
+        float s = ShortAtZero(SkillKind.Weapon, 1f);
+        Assert.Equal(1f, s);
+        Assert.Equal(0.8f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, s, Defaults, false, 1));
+        var m = CombatPenalties.ForWielded(SkillKind.Weapon, s, Defaults, false, 1);
+        Assert.Equal(0.8f, m.Damage);
+        // Swing / handling High is 37.5% -> capped at 20% too.
+        Assert.Equal(0.8f, m.Swing);
+        Assert.Equal(0.8f, m.ThrustOrRangedReady);
+        Assert.Equal(0.8f, m.Handling);
+        // Tooltip: same functions.
+        Assert.Equal(0.8f, TooltipStats.Multiplier(SkillKind.Weapon, false, TooltipStat.ThrustDamage, s, Defaults, 1));
+        Assert.Equal(0.8f, TooltipStats.Multiplier(SkillKind.Weapon, false, TooltipStat.SwingSpeed, s, Defaults, 1));
+        var parts = TooltipPenalties.For(SkillKind.Weapon, s, Defaults, false, 1);
+        Assert.All(parts, p => Assert.Equal(-20, p.Percent));
+    }
+
+    [Fact]
+    public void TierOneArmourSetAtAthleticsZero_FootSpeedMinusTwentyPercent()
+    {
+        float s = ShortAtZero(SkillKind.Armour, 1f);
+        var set = new[]
+        {
+            CombatPenalties.ArmourPieceFor(8f, s, Defaults, 1),
+            CombatPenalties.ArmourPieceFor(2f, s, Defaults, 1),
+            CombatPenalties.ArmourPieceFor(1f, s, Defaults, 1),
+            CombatPenalties.ArmourPieceFor(1.5f, s, Defaults, 1),
+        };
+        Assert.Equal(0.8f, Penalties.ArmourSpeedMultiplier(set, Defaults), 4);
+        // Tooltip compact line: "up to -20% foot speed".
+        var parts = TooltipPenalties.For(SkillKind.Armour, s, Defaults, false, 1);
+        Assert.Equal(-20, Assert.Single(parts).Percent);
+        // Mixed: a capped tier 1 helmet and an uncapped tier 3 cuirass, each capped before the weight share.
+        float s3 = ShortAtZero(SkillKind.Armour, 3f);
+        var mixed = new[] { CombatPenalties.ArmourPieceFor(1f, s, Defaults, 1), CombatPenalties.ArmourPieceFor(3f, s3, Defaults, 3) };
+        Assert.Equal(1f - (1f * 0.2f + 3f * 0.6f) / 4f, Penalties.ArmourSpeedMultiplier(mixed, Defaults), 4);
+    }
+
+    [Fact]
+    public void TierOneHorseAndShieldAtSkillZero_Capped()
+    {
+        float h = ShortAtZero(SkillKind.Mount, 1f);
+        Assert.Equal(0.8f, CombatPenalties.HorseSpeedMultiplier(h, Defaults, 1));
+        Assert.Equal(0.8f, CombatPenalties.HorseManeuverMultiplier(h, Defaults, 1));
+        Assert.Equal(0.8f, TooltipStats.Multiplier(SkillKind.Mount, false, TooltipStat.MountSpeed, h, Defaults, 1));
+        Assert.Equal(0.8f, TooltipStats.Multiplier(SkillKind.Mount, false, TooltipStat.MountManeuver, h, Defaults, 1));
+        float sh = ShortAtZero(SkillKind.Shield, 1f);
+        Assert.Equal(1.2f, CombatPenalties.ShieldDamageTakenMultiplier(sh, Defaults, 1));
+        Assert.Equal(20, Assert.Single(TooltipPenalties.For(SkillKind.Shield, sh, Defaults, false, 1)).Percent);
+    }
+
+    [Fact]
+    public void TierTwoGear_NotCapped()
+    {
+        Assert.Equal(2, Requirements.DisplayedTier(2f));
+        float w = ShortAtZero(SkillKind.Weapon, 2f);
+        Assert.Equal(Penalties.WeaponDamageMultiplier(w, Defaults), CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, w, Defaults, false, 2));
+        Assert.Equal(0.25f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, w, Defaults, false, 2), 4);
+        float a = ShortAtZero(SkillKind.Armour, 2f);
+        Assert.Equal(0.4f, Penalties.ArmourSpeedMultiplier(new[] { CombatPenalties.ArmourPieceFor(10f, a, Defaults, 2) }, Defaults), 4);
+        float h = ShortAtZero(SkillKind.Mount, 2f);
+        Assert.Equal(Penalties.HorseSpeedMultiplier(h, Defaults), CombatPenalties.HorseSpeedMultiplier(h, Defaults, 2));
+        Assert.Equal(Penalties.HorseManeuverMultiplier(h, Defaults), CombatPenalties.HorseManeuverMultiplier(h, Defaults, 2));
+        float sh = ShortAtZero(SkillKind.Shield, 2f);
+        Assert.Equal(Penalties.ShieldDamageTakenMultiplier(sh, Defaults), CombatPenalties.ShieldDamageTakenMultiplier(sh, Defaults, 2));
+        // No tier passed (null) = no cap either.
+        Assert.Equal(0.25f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, ShortAtZero(SkillKind.Weapon, 1f), Defaults), 4);
     }
 }

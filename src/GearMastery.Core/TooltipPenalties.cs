@@ -56,30 +56,33 @@ namespace GearMastery.Core
         {
             var parts = new List<PenaltyPart>(3);
             if (settings == null || !(shortfall > 0f)) return parts;
+            // The models' functions throughout, so the starter cap (displayedTier) applies here as in battle.
             switch (kind)
             {
                 case SkillKind.Weapon when thrownUsage:
                     // Thrown usage: the ranged anchors, as the models (CombatPenalties.ForWielded / DamageMultiplier).
-                    Add(parts, PenaltyStat.Damage, CombatPenalties.DamageMultiplier(kind, false, shortfall, settings, true));
-                    Add(parts, PenaltyStat.Inaccuracy, CombatPenalties.InaccuracyMultiplier(kind, true, shortfall, settings));
+                    Add(parts, PenaltyStat.Damage, CombatPenalties.DamageMultiplier(kind, false, shortfall, settings, true, displayedTier));
+                    Add(parts, PenaltyStat.Inaccuracy, CombatPenalties.InaccuracyMultiplier(kind, true, shortfall, settings, displayedTier));
                     break;
                 case SkillKind.Weapon:
-                    Add(parts, PenaltyStat.Damage, Penalties.WeaponDamageMultiplier(shortfall, settings));
-                    Add(parts, PenaltyStat.SwingSpeed, Penalties.SwingSpeedMultiplier(shortfall, settings));
-                    Add(parts, PenaltyStat.Handling, Penalties.HandlingMultiplier(shortfall, settings));
+                {
+                    var m = CombatPenalties.ForWielded(kind, shortfall, settings, false, displayedTier);
+                    Add(parts, PenaltyStat.Damage, m.Damage);
+                    Add(parts, PenaltyStat.SwingSpeed, m.Swing);
+                    Add(parts, PenaltyStat.Handling, m.Handling);
+                }
                     break;
                 case SkillKind.Shield:
-                    Add(parts, PenaltyStat.ShieldDamageTaken, Penalties.ShieldDamageTakenMultiplier(shortfall, settings));
+                    Add(parts, PenaltyStat.ShieldDamageTaken, CombatPenalties.ShieldDamageTakenMultiplier(shortfall, settings, displayedTier));
                     break;
                 case SkillKind.Armour:
                     // One piece alone: the speed loss if every worn piece were this short. The real penalty is the
                     // weight-weighted aggregate over all worn armour, so this is an upper bound - the text says "up to".
                     Add(parts, PenaltyStat.FootSpeedUpTo,
-                        Penalties.ArmourSpeedMultiplier(new[] { new ArmourPiece(1f, shortfall) }, settings));
+                        Penalties.ArmourSpeedMultiplier(new[] { CombatPenalties.ArmourPieceFor(1f, shortfall, settings, displayedTier) }, settings));
                     break;
                 case SkillKind.Ranged:
                 {
-                    // The models' function, so the starter cap (displayedTier) applies here too.
                     var m = CombatPenalties.ForWielded(kind, shortfall, settings, false, displayedTier);
                     Add(parts, PenaltyStat.Damage, m.Damage);
                     Add(parts, PenaltyStat.ReloadSpeed, m.Reload);
@@ -87,8 +90,8 @@ namespace GearMastery.Core
                 }
                     break;
                 case SkillKind.Mount:
-                    Add(parts, PenaltyStat.HorseSpeed, Penalties.HorseSpeedMultiplier(shortfall, settings));
-                    Add(parts, PenaltyStat.HorseManeuver, Penalties.HorseManeuverMultiplier(shortfall, settings));
+                    Add(parts, PenaltyStat.HorseSpeed, CombatPenalties.HorseSpeedMultiplier(shortfall, settings, displayedTier));
+                    Add(parts, PenaltyStat.HorseManeuver, CombatPenalties.HorseManeuverMultiplier(shortfall, settings, displayedTier));
                     break;
             }
             return parts;

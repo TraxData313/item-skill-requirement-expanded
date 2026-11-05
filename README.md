@@ -77,10 +77,13 @@ Each stat has its own Low / Mid / High (defaults):
 | Armour | foot speed | -20 / -40 / -60% |
 | Horse | speed, maneuver | -25 / -50 / -75% |
 
-**Starter bows, crossbows and slings**: there is no tier 0 bow or crossbow, so a hero with no skill would otherwise
-have nothing to learn on. Launchers of Tier 1 or lower (the tier the game shows) cost at most **20%** on each stat:
-a Hunting Bow (Tier 1, R 15) at Bow 0 loses 20% damage and 20% draw speed and gets +20% spread, not 75%. Both the
-tier and the cap are settings; a cap of 100% switches it off.
+**Starter gear**: Tier 1 gear has no easier option (there are no tier 0 bows or spears), so a hero
+with no skill would otherwise have nothing to learn on. Every item of Tier 1 or lower (the tier the game shows) -
+melee weapons (held and thrown), shields, armour, bows, crossbows, slings and horses - costs at most **20%** on each
+stat: a Hunting Bow (Tier 1, R 15) at Bow 0 loses 20% damage and 20% draw speed and gets +20% spread, a Tier 1 spear
+at Polearm 0 loses 20% damage, swing speed and handling, a Tier 1 horse at Riding 0 loses 20% speed and maneuver -
+not 75%. Armour is capped per piece before the weight share, so a whole Tier 1 set at Athletics 0 costs 20% foot
+speed. Both the tier and the cap are settings; a cap of 100% switches it off.
 
 **Armour** is judged piece by piece, each by its own R, and the result is shared by weight: a 1 kg helmet just out of
 reach under a 20 kg cuirass you master costs about 1% speed; the whole set far out of reach costs the full 60%.
@@ -120,8 +123,8 @@ Everything is in the in-game **Mod Configuration Menu** (Mod Options > Gear Mast
   ranged, horses; 0 = no requirement for that category).
 - **Penalty curve**: where Mid and High sit (default 60% and 30% of R).
 - **Every Low / Mid / High** of every stat above.
-- **Starter gear** (in Bows, crossbows and slings): the highest tier that counts as starter gear (default 1) and the
-  most any one penalty of it can cost (default 20%).
+- **Starter gear** (its own group, right after Penalty curve): the highest tier that counts as starter gear
+  (default 1) and the most any one penalty of it can cost (default 20%), for every category.
 - **Debug**: write `item_requirements.csv` (every item's tier, skill and R) at game start.
 
 Changes apply at once: penalties at the next hit or stat refresh, the tooltip when you next hover, requirements on

@@ -31,7 +31,7 @@ namespace GearMastery.Models
                 if (model == null) return damage;
                 float s = AgentGear.Shortfall(model, defender!, item, null, out var req);
                 if (req == null || req.Kind != SkillKind.Shield || s <= 0f) return damage;
-                return damage * Penalties.ShieldDamageTakenMultiplier(s, ItemRequirements.Settings);
+                return damage * CombatPenalties.ShieldDamageTakenMultiplier(s, ItemRequirements.Settings, req.DisplayedTier);
             }
             catch (Exception e)
             {

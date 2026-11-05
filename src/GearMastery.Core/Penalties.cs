@@ -6,11 +6,16 @@ namespace GearMastery.Core
     /// <summary>One worn armour piece, as the armour speed penalty sees it.</summary>
     public readonly struct ArmourPiece
     {
-        public ArmourPiece(float weight, float shortfall)
+        public ArmourPiece(float weight, float shortfall, float maxPenalty = 1f)
         {
             Weight = weight;
             Shortfall = shortfall;
+            MaxPenalty = maxPenalty;
         }
+
+        /// <summary>The most this piece's own penalty may be (the starter cap, <see cref="CombatPenalties.StarterCap"/>);
+        /// 1 = no cap. Applied before the weight-share aggregation.</summary>
+        public float MaxPenalty { get; }
 
         /// <summary>Item weight in kg. Negative or NaN counts as 0.</summary>
         public float Weight { get; }
@@ -145,7 +150,7 @@ namespace GearMastery.Core
 
         /// <summary>
         /// Multiplier on foot max speed from all worn armour: 1 - (sum weight_i x penalty_i) / (sum weight_i), where
-        /// penalty_i is the piece's own <see cref="ArmourPiecePenalty"/> and the sums run over EVERY worn piece (met
+        /// penalty_i is the piece's own <see cref="ArmourPiecePenalty"/> (held at its <see cref="ArmourPiece.MaxPenalty"/>) and the sums run over EVERY worn piece (met
         /// ones add weight, no penalty). A light helmet barely matters, a 20 kg cuirass dominates; the whole set at
         /// r 0.3 gives the full High (default -60%). 1 when nothing is worn or the total weight is 0.
         /// </summary>
@@ -159,7 +164,13 @@ namespace GearMastery.Core
                 float w = piece.Weight;
                 if (float.IsNaN(w) || float.IsInfinity(w) || w <= 0f) continue;
                 total += w;
-                if (piece.Shortfall > 0f) weighted += w * ArmourPiecePenalty(piece.Shortfall, s);
+                if (piece.Shortfall > 0f)
+                {
+                    float penalty = ArmourPiecePenalty(piece.Shortfall, s);
+                    float cap = piece.MaxPenalty;
+                    if (!float.IsNaN(cap) && cap < penalty) penalty = cap < 0f ? 0f : cap;
+                    weighted += w * penalty;
+                }
             }
             if (total <= 0) return 1f;
             return 1f - Clamp01((float)(weighted / total));

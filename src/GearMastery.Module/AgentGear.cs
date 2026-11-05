@@ -148,6 +148,7 @@ namespace GearMastery
         {
             var equipment = agent.SpawnEquipment;
             if (equipment == null) return 1f;
+            var settings = ItemRequirements.Settings;
             List<ArmourPiece>? pieces = null;
             bool anyShort = false;
             SkillObject? lastSkill = null;
@@ -158,6 +159,7 @@ namespace GearMastery
                 var item = element.Item;
                 if (item == null) continue;
                 float s = 0f;
+                int? tier = null;
                 var req = ItemRequirements.Get(item);
                 if (req != null && req.HasRequirement && req.Skill != null)
                 {
@@ -168,11 +170,13 @@ namespace GearMastery
                         lastValue = model.GetEffectiveSkill(agent, req.Skill);
                     }
                     s = Requirements.Shortfall(req.Value, lastValue);
+                    tier = req.DisplayedTier;
                 }
                 if (s > 0f) anyShort = true;
-                (pieces ??= new List<ArmourPiece>(5)).Add(new ArmourPiece(element.Weight, s));
+                // Each piece's penalty capped (starter gear) before the weight share.
+                (pieces ??= new List<ArmourPiece>(5)).Add(CombatPenalties.ArmourPieceFor(element.Weight, s, settings, tier));
             }
-            return anyShort && pieces != null ? Penalties.ArmourSpeedMultiplier(pieces, ItemRequirements.Settings) : 1f;
+            return anyShort && pieces != null ? Penalties.ArmourSpeedMultiplier(pieces, settings) : 1f;
         }
 
         /// <summary>The item in the agent's main hand, or null.</summary>

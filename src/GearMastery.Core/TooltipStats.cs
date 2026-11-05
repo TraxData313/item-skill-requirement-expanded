@@ -34,8 +34,9 @@ namespace GearMastery.Core
     /// The inventory tooltip's stat rows after our penalty: "Swing Damage: 37 (99-62) Cut", "Speed: 39 (52-13)".
     /// Every multiplier comes from the SAME Core functions the battle decorators use
     /// (<see cref="CombatPenalties.ForWielded"/>, <see cref="CombatPenalties.DamageMultiplier"/>,
-    /// <see cref="CombatPenalties.InaccuracyMultiplier"/>, <see cref="Penalties.HorseSpeedMultiplier"/> /
-    /// <see cref="Penalties.HorseManeuverMultiplier"/>), at the same shortfall and per-usage skill.
+    /// <see cref="CombatPenalties.InaccuracyMultiplier"/>, <see cref="CombatPenalties.HorseSpeedMultiplier"/> /
+    /// <see cref="CombatPenalties.HorseManeuverMultiplier"/>), at the same shortfall, per-usage skill and displayed
+    /// tier (the starter cap).
     /// </summary>
     public static class TooltipStats
     {
@@ -52,20 +53,20 @@ namespace GearMastery.Core
                 case SkillKind.Weapon when thrown:
                     switch (stat)
                     {
-                        case TooltipStat.ThrownDamage: return CombatPenalties.DamageMultiplier(kind, false, shortfall, settings, true);
-                        case TooltipStat.Accuracy: return CombatPenalties.InaccuracyMultiplier(kind, true, shortfall, settings);
+                        case TooltipStat.ThrownDamage: return CombatPenalties.DamageMultiplier(kind, false, shortfall, settings, true, displayedTier);
+                        case TooltipStat.Accuracy: return CombatPenalties.InaccuracyMultiplier(kind, true, shortfall, settings, displayedTier);
                         default: return 1f;
                     }
                 case SkillKind.Weapon:
                 {
-                    var m = CombatPenalties.ForWielded(kind, shortfall, settings);
+                    var m = CombatPenalties.ForWielded(kind, shortfall, settings, false, displayedTier);
                     switch (stat)
                     {
                         case TooltipStat.SwingSpeed: return m.Swing;
                         case TooltipStat.ThrustSpeed: return m.ThrustOrRangedReady;
                         case TooltipStat.Handling: return m.Handling;
                         case TooltipStat.SwingDamage:
-                        case TooltipStat.ThrustDamage: return CombatPenalties.DamageMultiplier(kind, false, shortfall, settings);
+                        case TooltipStat.ThrustDamage: return CombatPenalties.DamageMultiplier(kind, false, shortfall, settings, false, displayedTier);
                         default: return 1f;
                     }
                 }
@@ -82,8 +83,8 @@ namespace GearMastery.Core
                 case SkillKind.Mount:
                     switch (stat)
                     {
-                        case TooltipStat.MountSpeed: return Penalties.HorseSpeedMultiplier(shortfall, settings);
-                        case TooltipStat.MountManeuver: return Penalties.HorseManeuverMultiplier(shortfall, settings);
+                        case TooltipStat.MountSpeed: return CombatPenalties.HorseSpeedMultiplier(shortfall, settings, displayedTier);
+                        case TooltipStat.MountManeuver: return CombatPenalties.HorseManeuverMultiplier(shortfall, settings, displayedTier);
                         default: return 1f;
                     }
                 default:

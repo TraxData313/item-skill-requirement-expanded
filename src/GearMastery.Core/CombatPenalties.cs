@@ -60,6 +60,10 @@ namespace GearMastery.Core
     /// Which penalties hit which item family in battle, and the small rules around them. Pure, so the module's
     /// decorator models stay thin.
     /// </summary>
+    /// <remarks>
+    /// Every function that takes a <c>displayedTier</c> (vanilla's "Tier N" of the item) applies the starter cap
+    /// (<see cref="StarterCap"/>): null = no cap. The battle models and the tooltip pass the same tier, so they agree.
+    /// </remarks>
     public static class CombatPenalties
     {
         /// <summary>
@@ -94,33 +98,32 @@ namespace GearMastery.Core
         ///   no ready / swing / handling penalty).
         /// - Ranged (bow / crossbow / sling): damage, reload, draw (ThrustOrRangedReady) = the reload multiplier, inaccuracy.
         /// - Shield / Armour / Mount: nothing here (they have their own hooks).
-        /// A launcher's <paramref name="displayedTier"/> (vanilla's "Tier N") brings in the starter cap
-        /// (<see cref="StarterCap"/>); null = no cap.
+        /// Starter gear (<paramref name="displayedTier"/>) has each one capped (<see cref="StarterCap"/>).
         /// </summary>
         public static WieldedMultipliers ForWielded(SkillKind kind, float shortfall, GearMasterySettings settings, bool thrownUsage = false, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return WieldedMultipliers.Identity;
+            float cap = StarterCap(displayedTier, settings);
             switch (kind)
             {
                 case SkillKind.Weapon when thrownUsage:
                     return new WieldedMultipliers(
-                        Penalties.RangedDamageMultiplier(shortfall, settings),
+                        CapLoss(Penalties.RangedDamageMultiplier(shortfall, settings), cap),
                         1f, 1f, 1f, 1f,
-                        Penalties.InaccuracyMultiplier(shortfall, settings));
+                        CapGain(Penalties.InaccuracyMultiplier(shortfall, settings), cap));
                 case SkillKind.Weapon:
                 {
-                    float swing = Penalties.SwingSpeedMultiplier(shortfall, settings);
+                    float swing = CapLoss(Penalties.SwingSpeedMultiplier(shortfall, settings), cap);
                     return new WieldedMultipliers(
-                        Penalties.WeaponDamageMultiplier(shortfall, settings),
+                        CapLoss(Penalties.WeaponDamageMultiplier(shortfall, settings), cap),
                         swing,
                         swing,
-                        Penalties.HandlingMultiplier(shortfall, settings),
+                        CapLoss(Penalties.HandlingMultiplier(shortfall, settings), cap),
                         1f,
                         1f);
                 }
                 case SkillKind.Ranged:
                 {
-                    float cap = StarterCap(kind, displayedTier, settings);
                     float reload = CapLoss(Penalties.ReloadSpeedMultiplier(shortfall, settings), cap);
                     return new WieldedMultipliers(
                         CapLoss(Penalties.RangedDamageMultiplier(shortfall, settings), cap),
@@ -143,12 +146,11 @@ namespace GearMastery.Core
         public static float DamageMultiplier(SkillKind kind, bool blowIsAmmo, float shortfall, GearMasterySettings settings, bool thrownUsage = false, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return 1f;
+            float cap = StarterCap(displayedTier, settings);
             if (blowIsAmmo)
-                return kind == SkillKind.Ranged
-                    ? CapLoss(Penalties.RangedDamageMultiplier(shortfall, settings), StarterCap(kind, displayedTier, settings))
-                    : 1f;
+                return kind == SkillKind.Ranged ? CapLoss(Penalties.RangedDamageMultiplier(shortfall, settings), cap) : 1f;
             if (kind != SkillKind.Weapon) return 1f;
-            return thrownUsage ? Penalties.RangedDamageMultiplier(shortfall, settings) : Penalties.WeaponDamageMultiplier(shortfall, settings);
+            return CapLoss(thrownUsage ? Penalties.RangedDamageMultiplier(shortfall, settings) : Penalties.WeaponDamageMultiplier(shortfall, settings), cap);
         }
 
         /// <summary>The inaccuracy multiplier for a ranged usage: launchers (kind Ranged) and thrown usages of
@@ -156,21 +158,49 @@ namespace GearMastery.Core
         public static float InaccuracyMultiplier(SkillKind kind, bool thrownUsage, float shortfall, GearMasterySettings settings, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return 1f;
-            if (kind == SkillKind.Ranged)
-                return CapGain(Penalties.InaccuracyMultiplier(shortfall, settings), StarterCap(kind, displayedTier, settings));
-            return IsThrownUsage(kind, thrownUsage) ? Penalties.InaccuracyMultiplier(shortfall, settings) : 1f;
+            if (kind != SkillKind.Ranged && !IsThrownUsage(kind, thrownUsage)) return 1f;
+            return CapGain(Penalties.InaccuracyMultiplier(shortfall, settings), StarterCap(displayedTier, settings));
+        }
+
+        /// <summary>Multiplier on the damage an under-skilled shield takes, starter cap included.</summary>
+        public static float ShieldDamageTakenMultiplier(float shortfall, GearMasterySettings settings, int? displayedTier = null)
+        {
+            if (settings == null || !(shortfall > 0f)) return 1f;
+            return CapGain(Penalties.ShieldDamageTakenMultiplier(shortfall, settings), StarterCap(displayedTier, settings));
+        }
+
+        /// <summary>Multiplier on an under-skilled rider's horse speed, starter cap included.</summary>
+        public static float HorseSpeedMultiplier(float shortfall, GearMasterySettings settings, int? displayedTier = null)
+        {
+            if (settings == null || !(shortfall > 0f)) return 1f;
+            return CapLoss(Penalties.HorseSpeedMultiplier(shortfall, settings), StarterCap(displayedTier, settings));
+        }
+
+        /// <summary>Multiplier on an under-skilled rider's horse maneuver, starter cap included.</summary>
+        public static float HorseManeuverMultiplier(float shortfall, GearMasterySettings settings, int? displayedTier = null)
+        {
+            if (settings == null || !(shortfall > 0f)) return 1f;
+            return CapLoss(Penalties.HorseManeuverMultiplier(shortfall, settings), StarterCap(displayedTier, settings));
         }
 
         /// <summary>
-        /// The starter cap for this item, as the most any one penalty may take (0.2 = -20% damage / reload, +20%
-        /// inaccuracy); 1 = no cap. Only launchers (kind Ranged: bows, crossbows, slings) whose displayed tier is at
-        /// most <see cref="GearMasterySettings.StarterGearMaxTier"/> are starter gear - there are no tier 0 bows or
-        /// crossbows, so without it a hero at skill 0 had no way to start learning (Toni, 2026-11-05). A cap of 100% or
-        /// more changes nothing; the snap at skill &gt;= R is untouched (no shortfall, no penalty to cap).
+        /// One worn armour piece for <see cref="Penalties.ArmourSpeedMultiplier"/>, its own foot speed penalty capped
+        /// BEFORE the weight-share aggregation - so a full starter set tops out at the cap in total too.
         /// </summary>
-        public static float StarterCap(SkillKind kind, int? displayedTier, GearMasterySettings settings)
+        public static ArmourPiece ArmourPieceFor(float weight, float shortfall, GearMasterySettings settings, int? displayedTier = null) =>
+            new ArmourPiece(weight, shortfall, StarterCap(displayedTier, settings));
+
+        /// <summary>
+        /// The starter cap for an item, as the most any one penalty may take (0.2 = -20% damage / speed, +20%
+        /// inaccuracy / shield damage taken); 1 = no cap. Every item whose displayed tier is at most
+        /// <see cref="GearMasterySettings.StarterGearMaxTier"/> is starter gear, in every category: tier 1 gear has no
+        /// easier option (there are no tier 0 bows, spears, ...), so without it a hero at skill 0 had no way to start
+        /// learning (Toni, 2026-11-05). A cap of 100% or more changes nothing; the snap at skill &gt;= R is untouched
+        /// (no shortfall, no penalty to cap).
+        /// </summary>
+        public static float StarterCap(int? displayedTier, GearMasterySettings settings)
         {
-            if (settings == null || kind != SkillKind.Ranged || displayedTier == null) return 1f;
+            if (settings == null || displayedTier == null) return 1f;
             if (displayedTier.Value > settings.StarterGearMaxTier) return 1f;
             float cap = settings.StarterGearMaxPenalty;
             if (float.IsNaN(cap)) return 1f;

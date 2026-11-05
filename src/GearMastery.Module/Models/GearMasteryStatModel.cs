@@ -164,8 +164,8 @@ namespace GearMastery.Models
             float s = AgentGear.Shortfall(this, rider!, horse, null, out var req);
             if (req == null || req.Kind != SkillKind.Mount || s <= 0f) return;
             var settings = ItemRequirements.Settings;
-            p.MountSpeed *= Penalties.HorseSpeedMultiplier(s, settings);
-            p.MountManeuver *= Penalties.HorseManeuverMultiplier(s, settings);
+            p.MountSpeed *= CombatPenalties.HorseSpeedMultiplier(s, settings, req.DisplayedTier);
+            p.MountManeuver *= CombatPenalties.HorseManeuverMultiplier(s, settings, req.DisplayedTier);
         }
 
         public override float GetWeaponDamageMultiplier(Agent agent, WeaponComponentData weapon)

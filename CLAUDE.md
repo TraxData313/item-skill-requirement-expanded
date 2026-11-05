@@ -40,6 +40,9 @@ Not yet playtested in game as a whole (round 2 not deployed while Toni plays). P
   comparison colours compare after values. A compact "Unskilled:" line only for shield damage taken / armour foot speed.
 - Thrown usages (javelin thrown; kind Weapon + usage IsRangedWeapon) take the RANGED anchors in battle and tooltip:
   damage + inaccuracy, no swing / ready / handling (`CombatPenalties.IsThrownUsage`).
+- Starter cap (Toni, 2026-11-05): every item whose displayed tier <= `StarterGearMaxTier` (default 1), any category,
+  has each penalty capped at `StarterGearMaxPenalty` (default 20%) - `CombatPenalties.StarterCap`, passed as
+  `req.DisplayedTier` by models and tooltip; armour capped per piece before the weight share (`ArmourPiece.MaxPenalty`).
 
 ## Layout
 
