@@ -60,7 +60,7 @@ namespace GearMastery
         private static readonly ConcurrentDictionary<ItemObject, ItemRequirement?> Cache =
             new ConcurrentDictionary<ItemObject, ItemRequirement?>(RefComparer.Instance);
 
-        /// <summary>Live settings. Step 3+ may load these from a file; for now the defaults.</summary>
+        /// <summary>Live settings, from settings.json at every game start (<see cref="SettingsLoader"/>).</summary>
         public static GearMasterySettings Settings { get; set; } = new GearMasterySettings();
 
         /// <summary>Forget everything (new game / game end: models and items may differ).</summary>

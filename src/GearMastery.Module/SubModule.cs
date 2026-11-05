@@ -26,6 +26,7 @@ namespace GearMastery
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);
+            ItemRequirements.Settings = SettingsLoader.Load(); // before Reset: the table is rebuilt with these slopes
             ItemRequirements.Reset();
             AgentGear.Reset();
             try
