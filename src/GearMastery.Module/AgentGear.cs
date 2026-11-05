@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using GearMastery.Core;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
@@ -9,22 +8,16 @@ using TaleWorlds.ObjectSystem;
 namespace GearMastery
 {
     /// <summary>
-    /// Per-agent glue between the requirement table and the decorator models: which item a blow / a wielded slot
-    /// belongs to, the agent's shortfall on it (cached per agent and item for the mission - UpdateAgentStats runs on
-    /// every weapon switch, mount, ammo change), and the armour speed multiplier (cached once: spawn armour does not
-    /// change in a mission). Agent objects are new each mission, so the ConditionalWeakTable clears itself.
-    /// Thread-safe: blow damage may be computed off the main thread.
+    /// Glue between the requirement table and the decorator models: which item a blow / a wielded slot belongs to,
+    /// the agent's shortfall on it and the armour speed multiplier. NOT cached per agent (review, step 5): the
+    /// model's effective skill moves during a battle - formation captains are assigned after deployment
+    /// (Sandbox's GetEffectiveSkill adds their perks), the Phalanx perk follows the arrangement order, a hero can
+    /// level up mid-battle - and vanilla re-reads it on every stat update, so we do too. The cost is one
+    /// GetEffectiveSkill per covered item per stat update / blow; the requirement itself is cached in
+    /// <see cref="ItemRequirements"/>. Thread-safe (no per-agent state): blow damage may run off the main thread.
     /// </summary>
     internal static class AgentGear
     {
-        private sealed class Cache
-        {
-            public readonly Dictionary<ItemObject, float> Shortfall = new Dictionary<ItemObject, float>(4);
-            public float? ArmourSpeed;
-        }
-
-        private static readonly ConditionalWeakTable<Agent, Cache> Caches = new ConditionalWeakTable<Agent, Cache>();
-
         // WeaponComponentData -> its ItemObject, for a blow whose item is no longer in any slot (the last javelin thrown).
         private static readonly object MapGate = new object();
         private static Dictionary<WeaponComponentData, ItemObject>? _weaponToItem;
@@ -44,47 +37,45 @@ namespace GearMastery
 
         /// <summary>
         /// The agent's shortfall on the item (0 when not covered / met), using the model's effective skill
-        /// (captain perks etc.). Cached per agent and item for the mission.
+        /// (captain perks etc.), read fresh like vanilla's own stats.
         /// </summary>
         public static float Shortfall(AgentStatCalculateModel model, Agent agent, ItemObject? item, out ItemRequirement? requirement)
         {
             requirement = ItemRequirements.Get(item);
             if (item == null || requirement == null || !requirement.HasRequirement || requirement.Skill == null) return 0f;
-            var cache = Caches.GetValue(agent, _ => new Cache());
-            lock (cache)
-            {
-                if (cache.Shortfall.TryGetValue(item, out float s)) return s;
-            }
-            int skill = model.GetEffectiveSkill(agent, requirement.Skill);
-            float shortfall = Requirements.Shortfall(requirement.Value, skill);
-            lock (cache) cache.Shortfall[item] = shortfall;
-            return shortfall;
+            return Requirements.Shortfall(requirement.Value, model.GetEffectiveSkill(agent, requirement.Skill));
         }
 
-        /// <summary>The foot max-speed multiplier from all worn armour (weight-weighted shortfall), cached per agent.</summary>
+        /// <summary>The foot max-speed multiplier from all worn armour (weight-weighted shortfall).</summary>
         public static float ArmourSpeed(AgentStatCalculateModel model, Agent agent)
         {
-            var cache = Caches.GetValue(agent, _ => new Cache());
-            lock (cache)
-            {
-                if (cache.ArmourSpeed.HasValue) return cache.ArmourSpeed.Value;
-            }
-            var pieces = new List<ArmourPiece>(5);
             var equipment = agent.SpawnEquipment;
-            if (equipment != null)
+            if (equipment == null) return 1f;
+            List<ArmourPiece>? pieces = null;
+            bool anyShort = false;
+            SkillObject? lastSkill = null;
+            int lastValue = 0;
+            for (var i = EquipmentIndex.ArmorItemBeginSlot; i < EquipmentIndex.ArmorItemEndSlot; i++)
             {
-                for (var i = EquipmentIndex.ArmorItemBeginSlot; i < EquipmentIndex.ArmorItemEndSlot; i++)
+                var element = equipment[i];
+                var item = element.Item;
+                if (item == null) continue;
+                float s = 0f;
+                var req = ItemRequirements.Get(item);
+                if (req != null && req.HasRequirement && req.Skill != null)
                 {
-                    var element = equipment[i];
-                    var item = element.Item;
-                    if (item == null) continue;
-                    float s = Shortfall(model, agent, item, out _);
-                    pieces.Add(new ArmourPiece(element.Weight, s));
+                    // Every armour piece asks Athletics: one effective-skill read per agent, not per piece.
+                    if (!ReferenceEquals(req.Skill, lastSkill))
+                    {
+                        lastSkill = req.Skill;
+                        lastValue = model.GetEffectiveSkill(agent, req.Skill);
+                    }
+                    s = Requirements.Shortfall(req.Value, lastValue);
                 }
+                if (s > 0f) anyShort = true;
+                (pieces ??= new List<ArmourPiece>(5)).Add(new ArmourPiece(element.Weight, s));
             }
-            float m = Penalties.ArmourSpeedMultiplier(pieces, ItemRequirements.Settings);
-            lock (cache) cache.ArmourSpeed = m;
-            return m;
+            return anyShort && pieces != null ? Penalties.ArmourSpeedMultiplier(pieces, ItemRequirements.Settings) : 1f;
         }
 
         /// <summary>The item in the agent's main hand, or null.</summary>
