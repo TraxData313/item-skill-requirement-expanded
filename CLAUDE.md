@@ -2,10 +2,10 @@
 
 Bannerlord 1.4.8 (+ War Sails) mod: **soft skill requirements** on melee weapons, shields and armour. You CAN equip
 anything; if your skill is below the item's requirement, the requirement shows in red and you fight with scaled
-penalties. Bows, crossbows and horses keep vanilla's hard lock (untouched).
+penalties. Bows, crossbows and horses become soft too (R = vanilla difficulty).
 
-Status and the agreed design: `.manager\progress.md` (the resume file, committed). Step 1 (scaffold) is done; the
-requirement maths, combat penalties and the tooltip come next.
+Status and the agreed design: `.manager\progress.md` (the resume file, committed). Steps 1 (scaffold) and 2
+(requirements core) are done; combat penalties and the tooltip come next.
 
 ## Design (agreed with Toni, 2026-11-05)
 
@@ -13,10 +13,16 @@ requirement maths, combat penalties and the tooltip come next.
   at D ~ 12 x tier), slope 10 for armour (else heavy body armour would ask 110).
 - Skill: melee weapon = its `RelevantSkill` (One Handed / Two Handed / Polearm / Throwing); shields = One Handed;
   armour = Athletics.
-- `shortfall = clamp((R - skill) / R, 0, 1)`. Penalties scale linearly with it, maxima are settings:
-  - weapons: damage -up to 40%, swing speed -up to 20%, handling -up to 30%;
-  - shields: the shield takes up to +50% damage;
-  - armour: foot max speed -up to 15%, weighted by the weight share of the under-skilled pieces.
+- Bows, crossbows, slings and horses are soft too (Toni, 2026-11-05): R = vanilla `item.Difficulty`, skill =
+  `item.RelevantSkill` (Bow / Crossbow / Throwing / Riding). Vanilla's hard locks on them get lifted in steps 3/4.
+- `shortfall = clamp((R - skill) / R, 0, 1)`; penalty = max x shortfall^0.5 (`PenaltyExponent`). Penalties are MILD
+  on purpose (an expensive sword unskilled ~ a standard sword); maxima are settings in `GearMasterySettings`:
+  - weapons: damage -15%, swing speed -10%, handling -15%;
+  - shields: the shield takes up to +25% damage;
+  - armour: foot max speed -8%, weighted by the weight share of the under-skilled pieces;
+  - bows/crossbows: damage -15%, reload -10%, inaccuracy +30%; horses: speed and maneuver -10%.
+- Requirement table: `ItemRequirements` (module), lazy per game. Dev install writes
+  `Configs\GearMastery\item_requirements.csv` at game start.
 - Applies to every agent (setting: heroes only).
 - Inventory tooltip: vanilla `ItemMenuVM.AddSkillRequirement` draws "Requires <skill> <n>" red/green; we add the same
   line for our items plus a penalty line.
