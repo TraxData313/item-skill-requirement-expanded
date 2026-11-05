@@ -34,6 +34,27 @@ Soft skill requirements on melee weapons, shields and armour: you CAN equip, the
 4. [x] Inventory tooltip: red/green requirement + penalty line.
 5. [x] Review pass (independent), settings file, docs, final build/deploy, commit (no remote created, not pushed - per the step-5 brief).
 
+## Round 2 — Toni's feedback (2026-11-05), supersedes the round-1 numbers above
+
+### Design v2
+- **Requirement from a tier table**, for EVERY category incl. bows, crossbows, slings, horses (no more vanilla Difficulty): piecewise-linear on item.Tierf, roughly {0:0, 1:20, 2:45, 3:75, 4:100, 5:125, 6:150, 7.5+:200} — tier 6 gear asks 150, the best-of-the-best up to 200. Round to 5. Configurable in MCM (table points + per-category scale, default 1.0). Toni's anchors: "Tier 6 Falx" and "Tier 6 20 kg armour" → 150–200; "Fine Heavy Mail Shirt with Wide Belt" → 100–150.
+- **Skills**: melee per USAGE — the current weapon usage's RelevantSkill (bastard sword: One Handed in 1H mode, Two Handed in 2H mode; javelin: Throwing when thrown, Polearm/1H when held), same R. **Shields → Athletics** (changed from One Handed). Armour → Athletics. Bow/Crossbow/Throwing(sling)/Riding.
+- **Penalty curve with a snap**: skill ≥ R → 0. Below R, by ratio r = skill/R, piecewise-linear (not steps) through anchors (r=1 → low, r=0.6 → mid, r=0.3 → high), held at high below 0.3.
+  - Weapon damage: 25% / 50% / 75%. Swing speed + handling: proposal half of that (12.5/25/37.5) — configurable.
+  - Armour foot speed: 20% / 40% / 60% (weighted by weight share of under-skilled pieces).
+  - Shields, bows/crossbows (damage, reload, aim), horses (speed, maneuver): same shape, defaults ~25/50/75 for the main stat, half for the side stats.
+  - Goal (Toni): an item just above your skill must NOT beat the one you meet the requirement for (e.g. next-tier horse worse than your current horse).
+- **Who**: never troops (non-heroes). MCM toggles: player (default on), companions/clan heroes (default on), other lords — friendly & enemy (default on), apply in tournaments (default on). Troops keep vanilla behaviour incl. vanilla mount/bow locks.
+- **MCM** (Bannerlord.MBOptionScreen v5 is installed in Modules) replaces settings.json: tier table, per-category scales, all anchor values, the who-toggles.
+- **Tooltip**: "Requires: Bow 150 (yours 64)" red/green; for multi-usage weapons a line per skill. Stat lines show the debuffed value with the breakdown, e.g. horse "Speed 55 (60−5)"; same for weapon damage/speed, bow damage, shield, etc. where we penalise.
+
+### Steps (round 2)
+6. [ ] Requirements v2: tier table, per-usage skills, shields → Athletics, all categories; CSV/offline table check against Toni's anchors.
+7. [ ] Penalties v2: snap + piecewise anchors per category; who-filter (no troops; troops keep vanilla locks); models updated.
+8. [ ] MCM settings replacing settings.json.
+9. [ ] Tooltip v2: own skill, per-usage lines, debuffed stat values with breakdown.
+10. [ ] Independent review, docs, deploy, commit, push.
+
 ## Log
 - 2026-11-05 step 1: scaffold (commit e1b8e2c).
 - 2026-11-05 step 2: requirements core. Build 0 errors/0 warnings, 64 tests pass, deployed to Modules\GearMastery.Dev (game not launched).
