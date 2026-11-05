@@ -10,6 +10,19 @@ trader can still wear a noble sword for show; it just won't beat a good sword he
 
 Troops are never touched. They fight exactly as in vanilla.
 
+![One Handed 77: the Tier 3 axe he has mastered (green) next to a Tier 4 axe that asks 95 (red, after-penalty numbers)](docs/screenshots/02-axe-tier-above-penalised.jpg)
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Requirement met](docs/screenshots/01-axe-requirement-met.jpg) **1.** Requirement met: One Handed 75 (yours 77), green, no penalty. | ![A tier above](docs/screenshots/02-axe-tier-above-penalised.jpg) **2.** A Tier 4 axe asks 95: swing speed, damage and handling shown after the penalty. |
+| ![Armour](docs/screenshots/03-armour-foot-speed.jpg) **3.** Body armour above your Athletics: up to -28% foot speed, shared by armour weight. | ![Tier 6 armour](docs/screenshots/04-armour-tier-6.jpg) **4.** Tier 6 armour asks Athletics 200: up to -49% foot speed. |
+| ![Shield](docs/screenshots/05-shield-damage-taken.jpg) **5.** A shield above your Athletics takes +35% damage. | ![Throwing axe, thrown](docs/screenshots/06-throwing-axe-thrown.jpg) **6.** Throwing axe, thrown tab: asks Throwing, damage and accuracy after the penalty. |
+| ![Throwing axe, held](docs/screenshots/07-throwing-axe-held.jpg) **7.** The same axe, one-handed tab: asks One Handed instead. | ![Javelin](docs/screenshots/08-javelin-thrown.jpg) **8.** Harpoon (Throwing 80) next to a Simple Javelin you have mastered. |
+| ![Longbow](docs/screenshots/09-longbow-no-skill.jpg) **9.** A Tier 3 longbow at Bow 0: equippable, but weak and wide. | ![Hunting bow](docs/screenshots/10-hunting-bow-starter-cap.jpg) **10.** Starter gear: a Tier 1 Hunting Bow at Bow 0 costs only 20%. |
+| ![Horses](docs/screenshots/11-horses.jpg) **11.** Horses ask Riding: speed and maneuver after the penalty. | |
+
 ## What asks for what
 
 Every covered item asks one skill at one requirement **R**, read from the item's tier:

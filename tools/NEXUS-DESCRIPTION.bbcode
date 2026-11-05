@@ -1,0 +1,82 @@
+[b]Wear anything - but earn it.[/b]
+
+Skill requirements become [b]soft[/b]. Your heroes can equip any weapon, shield, armour, bow or horse. If their skill is below what the item asks for, the requirement shows red in the inventory and they fight with it worse: weaker and slower swings, a shield that breaks sooner, heavy feet in armour, a bow that shoots weak and wide, a horse that answers the reins badly.
+
+The rule of thumb: [b]an item a tier or two above your skill comes out worse than the one you have mastered.[/b] A rich trader can still wear a noble sword for show; it just won't beat a good sword he has trained for. Troops are never touched.
+
+[size=5][b]What asks for what[/b][/size]
+[list]
+[*][b]One-handed, two-handed, polearm[/b]: the skill of the way you hold it (a bastard sword asks One Handed in one hand, Two Handed in two).
+[*][b]Javelins, throwing axes and knives[/b]: Throwing when thrown, their melee skill when held.
+[*][b]Shields[/b] and [b]armour[/b] (head, body, legs, gloves, cape): Athletics.
+[*][b]Bows / crossbows / slings[/b]: Bow / Crossbow / Throwing.
+[*][b]Horses[/b]: Riding.
+[*]Arrows, bolts, stones, banners, pack animals, harness and goods ask nothing.
+[/list]
+
+The requirement follows the item's tier:
+[code]
+Item tier     0   1   2   3    4    5    6   7.5+
+Requirement   0  20  45  75  100  125  150   200
+[/code]
+In between it runs in a straight line, rounded to 5 (vanilla shows "Tier 6" from 5.5, so Tier 6 gear asks about 140 to 200). Bows, crossbows and horses use this table too, and no longer lock you out: equip them and mount any horse, and pay the penalty instead.
+
+[size=5][b]How much it costs[/b][/size]
+[list]
+[*][b]At or above the requirement: no penalty at all.[/b] The moment you reach it, the item is yours.
+[*]Just below it the penalty snaps in at its [b]Low[/b] value and grows as your skill falls: [b]Mid[/b] at 60% of the requirement, [b]High[/b] at 30% and below.
+[*]Melee weapon: damage -25 / -50 / -75%, swing speed and handling -12.5 / -25 / -37.5%.
+[*]Thrown weapon: damage -25 / -50 / -75%, inaccuracy +25 / +50 / +75%.
+[*]Bow / crossbow / sling: damage -25 / -50 / -75%, draw and reload speed -12.5 / -25 / -37.5%, inaccuracy +25 / +50 / +75%.
+[*]Shield: damage it takes +25 / +50 / +75%.
+[*]Armour: foot speed -20 / -40 / -60%, piece by piece and shared by weight (a light helmet just out of reach costs almost nothing).
+[*]Horse: speed and maneuver -25 / -50 / -75%.
+[*][b]Starter gear[/b]: every Tier 1 item costs at most [b]20%[/b] on each stat, so a hero with no skill still has something to learn on. A Hunting Bow at Bow 0 loses 20% damage, not 75%.
+[/list]
+Example: One Handed 71 with a Tier 6 sword (requirement 160) loses 63% of its damage. With a Tier 3 sword (75) he loses 28%; at One Handed 75 he loses nothing.
+
+[size=5][b]Who is affected[/b][/size]
+[list]
+[*]You, your clan's heroes and every other hero, friend and foe - each a toggle, all on by default. Tournaments too (also a toggle).
+[*][b]Troops: never.[/b] They fight exactly as in vanilla, vanilla bow and horse locks included.
+[/list]
+
+[size=5][b]The inventory tooltip[/b][/size]
+[list]
+[*][b]Requires: Two Handed 160 (yours 71)[/b] - red when short, green when met, per usage tab.
+[*]When short, the stat rows show the value [b]after[/b] the penalty, then the vanilla value minus the penalty: [i]Swing Damage: 47 (75-28) Cut[/i]. Comparing two items compares the after-penalty values.
+[*]Shields and armour get one red line: [i]Unskilled: +35% shield damage taken[/i], or [i]up to -28% foot speed (shared by armour weight)[/i].
+[/list]
+
+[size=5][b]Settings[/b][/size]
+With [url=https://www.nexusmods.com/mountandblade2bannerlord/mods/612]Mod Configuration Menu[/url] ([b]optional[/b]) everything is under Mod Options > Item Skill Requirement Expanded: who is affected, every point of the tier table and a scale per category (0 = no requirement), where Mid and High sit, every Low / Mid / High, and the starter gear tier and cap. Changes apply at once. Without MCM the mod runs on the defaults above.
+
+[size=5][b]Requirements[/b][/size]
+[list]
+[*][url=https://www.nexusmods.com/mountandblade2bannerlord/mods/2006]Harmony[/url] (required)
+[*][url=https://www.nexusmods.com/mountandblade2bannerlord/mods/612]Mod Configuration Menu[/url] (optional)
+[/list]
+
+[size=5][b]Install[/b][/size]
+[list]
+[*][b]Vortex:[/b] click Mod Manager Download and enable it.
+[*][b]Manual:[/b] extract the zip into [i]Mount & Blade II Bannerlord\Modules\[/i], so you get [i]Modules\ItemSkillRequirementExpanded\SubModule.xml[/i]. Enable it in the launcher, below Harmony (and MCM if you use it).
+[/list]
+
+[size=5][b]Good to know[/b][/size]
+[list]
+[*]Game v1.4.8, singleplayer. Works with or without War Sails.
+[*]Safe to add or remove mid-campaign: nothing is saved into your campaign.
+[*]Works with [b]Trax Combat Enhancements[/b] and other mods that change the combat models: it wraps their models and only multiplies on top. Trax's Athletics stamina and these penalties stack (a tired hero in armour above his Athletics is slower for both reasons).
+[*]The tooltip uses your plain skill; battle uses the effective skill (captain perks and the like), so a battle can be a few points kinder than the tooltip.
+[*]Items another mod gives a vanilla difficulty on melee weapons, shields or armour stay hard-locked as in vanilla.
+[*]The tooltip text is English only for now.
+[*]Also on [url=https://github.com/TraxData313/item-skill-requirement-expanded/releases/latest]GitHub Releases[/url]. Same files.
+[/list]
+
+Bugs or a mod it fights with: tell me in the comments or on [url=https://github.com/TraxData313/item-skill-requirement-expanded/issues]GitHub[/url]. Every number and setting in detail: [url=https://github.com/TraxData313/item-skill-requirement-expanded#readme]README[/url].
+
+Made by two of us: the code and all technical work by Claude (Opus 5.5), an AI; the idea, feedback and playtesting by [url=https://github.com/TraxData313]Trax[/url], Bible believer and engineer in AI/ML/Python/Applied Maths.
+
+Free and open — public domain (The Unlicense). Source: [url=https://github.com/TraxData313/item-skill-requirement-expanded]github.com/TraxData313/item-skill-requirement-expanded[/url]
+To thank me, open [url=https://github.com/TraxData313]my GitHub profile[/url] and read my top pinned.
