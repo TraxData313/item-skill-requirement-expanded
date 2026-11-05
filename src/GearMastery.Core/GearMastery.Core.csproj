@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pure logic: no game references. Requirement maths (R from tier, shortfall, penalty scaling) lives here,
+       unit-tested in tests\GearMastery.Core.Tests; the module feeds it numbers read from the game. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>GearMastery.Core</RootNamespace>
+    <AssemblyName>GearMastery.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="GearMastery.Core.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,16 @@
+bin/
+obj/
+*.user
+.vs/
+.idea/
+TestResults/
+logs/
+*.log
+
+dist/
+
+# Droppings of TaleWorlds' Workshop uploader when run from the repo root
+steam_appid.txt
+steam_workshop_uploader.txt
+
+# .manager/progress.md IS committed: it is the resume file for manager-mode work.
