@@ -77,9 +77,10 @@ public class RequirementsTests
     [Fact]
     public void TopTierBelowSixIsSortedNotBroken()
     {
-        // A bad TopTier (5) sorts before tier 6: the table still interpolates on sorted points, no exception.
+        // A bad TopTier (5) sorts before tier 6: the table still interpolates on sorted points, no exception, and
+        // never falls - tier 6 (150) is raised to the 200 asked at tier 5.
         var s = new GearMasterySettings { TopTier = 5f, RequirementAtTopTier = 200 };
-        Assert.Equal(150, Requirements.Requirement(SkillKind.Weapon, 7f, s)); // last point is tier 6 now
+        Assert.Equal(200, Requirements.Requirement(SkillKind.Weapon, 7f, s));
     }
 
     [Fact]
@@ -95,6 +96,26 @@ public class RequirementsTests
         Assert.Equal(40f, Requirements.FromTable(2f, dup), 4);
         var withNan = new[] { new TierPoint(0f, 0f), new TierPoint(float.NaN, 999f), new TierPoint(2f, 20f) };
         Assert.Equal(10f, Requirements.FromTable(1f, withNan), 4);
+    }
+
+    [Fact]
+    public void MisorderedTierTableNeverFalls()
+    {
+        // Tier 4 set below tier 3 in the menu: tier 4 asks what tier 3 asks, never less.
+        var s = new GearMasterySettings { RequirementAtTier4 = 10 };
+        Assert.Equal(75, Requirements.Requirement(SkillKind.Weapon, 4f, s));
+        Assert.Equal(75, Requirements.Requirement(SkillKind.Weapon, 3.5f, s));
+        Assert.Equal(125, Requirements.Requirement(SkillKind.Weapon, 5f, s));
+        int prev = 0;
+        for (float t = 0f; t <= 10f; t += 0.05f)
+        {
+            int r = Requirements.Requirement(SkillKind.Weapon, t, s);
+            Assert.True(r >= prev, $"tier {t}: {r} < {prev}");
+            prev = r;
+        }
+        // Top point set below tier 6: held at tier 6's value.
+        var top = new GearMasterySettings { RequirementAtTopTier = 50 };
+        Assert.Equal(150, Requirements.Requirement(SkillKind.Weapon, 9f, top));
     }
 
     [Theory]

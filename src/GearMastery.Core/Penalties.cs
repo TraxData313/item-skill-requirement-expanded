@@ -36,7 +36,9 @@ namespace GearMastery.Core
         /// The penalty fraction at this shortfall for one stat's anchors: 0 when s &lt;= 0 (or NaN); else, with
         /// r = 1 - s: Low + (Mid - Low) x (1 - r) / (1 - midRatio) for r &gt;= midRatio; Mid + (High - Mid) x
         /// (midRatio - r) / (midRatio - highRatio) down to highRatio; High below. The anchor ratios fall back to
-        /// 0.6 / 0.3 unless 0 &lt; high &lt; mid &lt; 1. Non-finite anchor values count as 0; callers clamp the result.
+        /// 0.6 / 0.3 unless 0 &lt; high &lt; mid &lt; 1. Non-finite anchor values count as 0; misordered anchors are
+        /// raised to a running maximum (Mid &gt;= Low, High &gt;= Mid), so the penalty never falls as the skill falls.
+        /// Callers clamp the result.
         /// </summary>
         public static float Amount(float shortfall, float low, float mid, float high, GearMasterySettings settings)
         {
@@ -52,6 +54,10 @@ namespace GearMastery.Core
             low = Finite(low);
             mid = Finite(mid);
             high = Finite(high);
+            // Anchors set out of order in the menu (e.g. Low above High): never let the penalty shrink as the skill
+            // drops - each anchor is at least the one before it.
+            if (mid < low) mid = low;
+            if (high < mid) high = mid;
             if (r >= midRatio) return low + (mid - low) * (1f - r) / (1f - midRatio);
             if (r > highRatio) return mid + (high - mid) * (midRatio - r) / (midRatio - highRatio);
             return high;

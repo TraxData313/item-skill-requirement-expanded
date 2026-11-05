@@ -121,21 +121,21 @@ public class CombatPenaltiesTests
         Assert.Equal(1f, CombatPenalties.DamageMultiplier(SkillKind.Shield, false, 1f, Defaults));
         Assert.Equal(1f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, 0f, Defaults));
 
-        var tough = new GearMasterySettings { RangedDamagePenaltyHigh = 0.4f };
-        Assert.Equal(0.6f, CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, 1f, tough), 4);
+        var tough = new GearMasterySettings { RangedDamagePenaltyHigh = 0.6f };
+        Assert.Equal(0.4f, CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, 1f, tough), 4);
     }
 
     [Fact]
     public void ThrownUsageTakesTheRangedAnchors()
     {
-        var tough = new GearMasterySettings { RangedDamagePenaltyHigh = 0.4f, RangedInaccuracyBonusHigh = 1f };
+        var tough = new GearMasterySettings { RangedDamagePenaltyHigh = 0.6f, RangedInaccuracyBonusHigh = 1f };
         Assert.True(CombatPenalties.IsThrownUsage(SkillKind.Weapon, true));
         Assert.False(CombatPenalties.IsThrownUsage(SkillKind.Weapon, false));
         Assert.False(CombatPenalties.IsThrownUsage(SkillKind.Ranged, true));
 
         // Wielded javelin in throwing mode: ranged damage + aim, no swing / ready / handling / reload.
         var m = CombatPenalties.ForWielded(SkillKind.Weapon, 1f, tough, thrownUsage: true);
-        Assert.Equal(0.6f, m.Damage, 4);
+        Assert.Equal(0.4f, m.Damage, 4);
         Assert.Equal(2f, m.Inaccuracy, 4);
         Assert.Equal(1f, m.Swing);
         Assert.Equal(1f, m.ThrustOrRangedReady);
@@ -143,7 +143,7 @@ public class CombatPenaltiesTests
         Assert.Equal(1f, m.Reload);
 
         // Its blow: ranged damage anchors; held (melee) usage keeps the melee ones.
-        Assert.Equal(0.6f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, 1f, tough, thrownUsage: true), 4);
+        Assert.Equal(0.4f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, 1f, tough, thrownUsage: true), 4);
         Assert.Equal(0.25f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, 1f, tough, thrownUsage: false), 4);
 
         // Inaccuracy: launchers and thrown usages only.

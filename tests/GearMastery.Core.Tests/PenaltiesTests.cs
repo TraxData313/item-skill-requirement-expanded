@@ -160,10 +160,41 @@ public class PenaltiesTests
             ShieldDamageTakenBonusHigh = -2f, RangedInaccuracyBonusHigh = float.NaN,
         };
         Assert.Equal(0f, Penalties.WeaponDamageMultiplier(1f, s), 5);
-        Assert.Equal(1f, Penalties.SwingSpeedMultiplier(1f, s), 5);
-        Assert.Equal(1f, Penalties.HandlingMultiplier(1f, s), 5);
-        Assert.Equal(1f, Penalties.ShieldDamageTakenMultiplier(1f, s), 5);
-        Assert.Equal(1f, Penalties.InaccuracyMultiplier(1f, s), 5);
+        // A High below Mid (negative / NaN) is raised to Mid: the penalty never shrinks as the skill falls.
+        Assert.Equal(0.75f, Penalties.SwingSpeedMultiplier(1f, s), 5);
+        Assert.Equal(0.75f, Penalties.HandlingMultiplier(1f, s), 5);
+        Assert.Equal(1.5f, Penalties.ShieldDamageTakenMultiplier(1f, s), 5);
+        Assert.Equal(1.5f, Penalties.InaccuracyMultiplier(1f, s), 5);
+    }
+
+    [Fact]
+    public void MisorderedAnchorsAreRaisedToARunningMaximum()
+    {
+        // Low 50 / Mid 25 / High 10 (a user dragging sliders the wrong way): flat 50% everywhere below R.
+        foreach (float s in new[] { 0.01f, 0.2f, 0.4f, 0.55f, 0.7f, 1f })
+            Assert.Equal(0.5f, Penalties.Amount(s, 0.5f, 0.25f, 0.1f, Defaults), 5);
+        // Low 10 / Mid 60 / High 30: Mid stands, High raised to 60.
+        Assert.Equal(0.6f, Penalties.Amount(0.4f, 0.1f, 0.6f, 0.3f, Defaults), 5);
+        Assert.Equal(0.6f, Penalties.Amount(0.9f, 0.1f, 0.6f, 0.3f, Defaults), 5);
+        // Still exactly 0 at the requirement (the snap), whatever the anchors.
+        Assert.Equal(0f, Penalties.Amount(0f, 0.5f, 0.25f, 0.1f, Defaults));
+    }
+
+    [Fact]
+    public void PenaltyIsMonotoneForAnyAnchors()
+    {
+        var rnd = new Random(7);
+        for (int n = 0; n < 200; n++)
+        {
+            float low = (float)rnd.NextDouble(), mid = (float)rnd.NextDouble(), high = (float)rnd.NextDouble();
+            float prev = 0f;
+            for (int skill = 100; skill >= 0; skill--)
+            {
+                float a = Penalties.Amount(S(100, skill), low, mid, high, Defaults);
+                Assert.True(a >= prev - 1e-6f, $"anchors {low}/{mid}/{high}, skill {skill}: {a} < {prev}");
+                prev = a;
+            }
+        }
     }
 
     [Fact]

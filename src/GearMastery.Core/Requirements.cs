@@ -22,7 +22,8 @@ namespace GearMastery.Core
         /// <summary>
         /// Piecewise-linear table lookup: interpolates between the two points around <paramref name="tierf"/>, held
         /// flat at the first / last point outside them. Points are sorted by tier here (input order does not matter);
-        /// points with a NaN/infinite tier are ignored. 0 for an empty table or a NaN/infinite tier.
+        /// points with a NaN/infinite tier are ignored; a point asking less than one at a lower tier is raised to it (the
+        /// table never falls). 0 for an empty table or a NaN/infinite tier.
         /// </summary>
         public static float FromTable(float tierf, IReadOnlyList<TierPoint> points)
         {
@@ -33,6 +34,11 @@ namespace GearMastery.Core
                     sorted.Add(p);
             if (sorted.Count == 0) return 0f;
             sorted.Sort((a, b) => a.Tier.CompareTo(b.Tier));
+            // A table set out of order in the menu (tier 4 asking less than tier 3): a better item never asks less -
+            // each point is raised to the highest requirement below it.
+            for (int i = 1; i < sorted.Count; i++)
+                if (sorted[i].Requirement < sorted[i - 1].Requirement)
+                    sorted[i] = new TierPoint(sorted[i].Tier, sorted[i - 1].Requirement);
 
             if (tierf <= sorted[0].Tier) return sorted[0].Requirement;
             var last = sorted[sorted.Count - 1];
