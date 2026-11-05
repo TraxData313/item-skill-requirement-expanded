@@ -136,12 +136,23 @@ A hero the toggles leave out is treated like a troop: vanilla stats, vanilla loc
 - Shields and armour have no stat row for their penalty, so they get one red line instead:
   `Unskilled: +50% shield damage taken`, or `up to -40% foot speed (shared by armour weight)`.
 
+## Orange rows in the inventory list
+
+Since v1.1.0 the inventory lists (both sides) tint an item **orange** when its requirement is above the selected
+hero's skill: you can equip it, but you will fight with it at a penalty. Vanilla's **red** still means "this hero
+can't use it at all" (wrong gender, not for the civilian set, a hard lock) and always wins over orange. A weapon with
+two uses (bastard sword, javelin) is judged by its first use - the tab its tooltip opens on. Switch heroes with the
+arrows and the rows follow the new hero's skills. Only heroes the toggles above cover get orange rows; turn it off with
+**Highlight items above your skill** (MCM, Inventory group). No extra mod needed: it is a brush the mod ships in its
+own `GUI\Brushes` folder.
+
 ## Settings
 
 Everything is in the in-game **Mod Configuration Menu** (Mod Options > Item Skill Requirement Expanded) if you have MCM
 (Bannerlord.MBOptionScreen) installed:
 
 - **Who is affected**: the four toggles above.
+- **Inventory**: highlight items above your skill (orange rows; default on).
 - **Requirements**: every point of the tier table, the top tier, and a scale per category (melee, shields, armour,
   ranged, horses; 0 = no requirement for that category).
 - **Penalty curve**: where Mid and High sit (default 60% and 30% of R).
@@ -163,7 +174,7 @@ puts both back to 60% / 30%. Without MCM the mod runs on the defaults.
   does not matter for that; Item Skill Requirement Expanded asks to load after trax so the chain is tidy.
 - **War Sails**: its naval models are wrapped the same way.
 - Needs **Harmony** (Bannerlord.Harmony): equipping bows and horses above vanilla's lock, mounting any horse in
-  battle, and the tooltip. If a game update breaks one of those patches, that part is skipped and logged; the
+  battle, the tooltip and the orange rows. If a game update breaks one of those patches, that part is skipped and logged; the
   combat penalties still work.
 - MCM is optional.
 - Nothing is saved into your campaign. You can add or remove the mod mid-campaign.
@@ -180,6 +191,8 @@ puts both back to 60% / 30%. Without MCM the mod runs on the defaults.
   to refresh it).
 - Items another mod gives a vanilla difficulty on melee weapons, shields or armour stay hard-locked as in vanilla.
 - The tooltip text is English only for now.
+- Orange rows are in the item lists only, not on the hero's equipped slots. A mod that replaces the inventory
+  item-row widget with its own type would not get them.
 
 ## Build
 

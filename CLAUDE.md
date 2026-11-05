@@ -39,6 +39,15 @@ Renamed to this name on 2026-11-05 (old names and the leftover old dev install: 
   usage tab; when short (and the who-toggles cover the character) vanilla's stat rows show the after-penalty value
   with the breakdown ("Swing Damage: 37 (99-62) Cut"), from Core `TooltipStats` (same functions as the models);
   comparison colours compare after values. A compact "Unskilled:" line only for shield damage taken / armour foot speed.
+- Orange inventory rows (v1.1.0, `Patches\InventoryHighlightPatch`, Core `InventoryHighlight.AboveSkill`): no
+  UIExtenderEx. Postfix on `InventoryItemTupleWidget.UpdateEquipmentTypeState` (vanilla's brush choice: red
+  `CharacterCantUse`, `CantUseInSet`, else Default) swaps ONLY the Default brush for ours
+  (`module\GUI\Brushes\ItemSkillRequirementExpanded.xml`, vanilla's red tuple brush in orange #FFA028), so vanilla's red
+  wins and vanilla resets it. Item from the widget's `ItemID` looked up in the open `SPInventoryVM`'s lists, character =
+  its `_currentCharacter`; captured + cache cleared in a prefix on `SPInventoryVM.UpdateRightCharacter` (open, hero
+  switch, equip), whose postfix re-runs the brush choice on every live row (tracked via OnConnected/Disconnected
+  postfixes; an `ItemID` setter postfix catches late binding). Multi-usage weapons: PRIMARY usage's skill, raw skill.
+  Toggle `HighlightItemsAboveSkill` (MCM group "Inventory", order 1). Equipped slots not tinted.
 - Thrown usages (javelin thrown; kind Weapon + usage IsRangedWeapon) take the RANGED anchors in battle and tooltip:
   damage + inaccuracy, no swing / ready / handling (`CombatPenalties.IsThrownUsage`).
 - Starter cap (Toni, 2026-11-05): every item whose displayed tier <= `StarterGearMaxTier` (default 1), any category,
@@ -54,9 +63,9 @@ Renamed to this name on 2026-11-05 (old names and the leftover old dev install: 
   `ModLog`, `McmSettings` (the MCM page, fluent builder), `ItemRequirements` (the table + THE live settings object),
   `AgentGear` (item of a blow, shortfall from the model's effective skill - deliberately NOT cached per agent:
   captains / Phalanx / level-ups move it mid-battle), `MountRefreshLogic` (refreshes a horse when mounted);
-  `Models\` the decorator models; `Patches\` the Harmony patches (`MountSkillPatch` once at the first game start of any type; inventory `CanUseItemPatch`, `ItemTooltipPatch` once at the first campaign start). Depends on `Bannerlord.Harmony` (not shipped).
+  `Models\` the decorator models; `Patches\` the Harmony patches (`MountSkillPatch` once at the first game start of any type; inventory `CanUseItemPatch`, `ItemTooltipPatch`, `InventoryHighlightPatch` once at the first campaign start). Depends on `Bannerlord.Harmony` (not shipped).
 - `tests\ItemSkillRequirementExpanded.Core.Tests` - xunit, net8.0.
-- `module\` - SubModule.xml. Build output lands in `module\bin` (git-ignored).
+- `module\` - SubModule.xml, `GUI\Brushes\` (the orange row brush; deploy.ps1 / package.ps1 copy GUI). Build output lands in `module\bin` (git-ignored).
 - Machine paths: `Directory.Build.props.user` (git-ignored) sets `GameFolder` and `HarmonyBinFolder` (falls back to
   `Modules\Bannerlord.Harmony` when that has no 0Harmony.dll) and `McmBinFolder` (falls back to
   `Modules\Bannerlord.MBOptionScreen`).
