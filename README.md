@@ -1,74 +1,150 @@
 # Gear Mastery
 
 A Mount & Blade II: Bannerlord mod (1.4.8, War Sails compatible) that makes skill requirements **soft**. You can
-equip anything. If your skill is below what an item asks for, the requirement shows in red in the inventory and
-you fight with the item a bit worse: weaker, slower swings, a shield that breaks sooner, heavier feet in armour,
-a horse that answers the reins less well. Nothing is ever locked.
+equip anything. If your skill is below what an item asks for, the requirement shows in red in the inventory and you
+fight with the item worse: weaker and slower swings, a shield that breaks sooner, heavy feet in armour, a bow that
+shoots weak and wide, a horse that answers the reins badly. Nothing is ever locked for the heroes the mod covers.
 
-The penalties are mild on purpose. A rich trader can still carry a noble sword for show; it just won't beat a
-good standard sword until he has trained for it.
+The rule of thumb: **an item a tier or two above your skill comes out worse than the one you have mastered.** A rich
+trader can still wear a noble sword for show; it just won't beat a good sword he has trained for.
+
+Troops are never touched. They fight exactly as in vanilla.
 
 ## What asks for what
 
-| Item | Skill | Requirement R |
-|---|---|---|
-| One-handed, two-handed, polearm, throwing weapons | the weapon's own skill | about **12 x tier** |
-| Shields | One Handed | about **12 x tier** |
-| Armour (head, body, legs, gloves, cape) | Athletics | about **10 x tier** |
-| Bows, crossbows, slings | Bow / Crossbow / Throwing | the **vanilla difficulty** |
-| Horses | Riding | the **vanilla difficulty** |
+Every covered item asks one skill at one requirement **R**, read from the item's tier:
 
-The tier formula rounds to the nearest 5 and is capped at 100. Most body armour asks around 20 Athletics, the best
-around 90; helmets about 45; shields up to 75. Arrows, bolts, banners, pack animals and goods ask nothing.
-
-Bows, crossbows, slings and horses keep their vanilla numbers, but they no longer lock you out: you can equip them
-in the inventory and mount any horse in battle, and pay the penalty instead.
-
-## How much it costs
-
-`shortfall = (R - your skill) / R`, from 0 (requirement met) to 1 (skill 0). The penalty is
-`maximum x shortfall^0.5`, so a moderate gap already costs most of the maximum:
-
-| Item | Penalty at full shortfall (default) |
+| Item | Skill |
 |---|---|
-| Melee / throwing weapon | -15% damage, -10% swing and thrust speed, -15% handling |
-| Shield | the shield takes +25% damage |
-| Armour | -8% foot speed if ALL your armour is that far out of reach; it is shared by weight, so one light helmet barely matters |
-| Bow / crossbow / sling | -15% missile damage, -10% reload and draw speed, +30% inaccuracy |
-| Horse | -10% speed, -10% maneuver |
+| One-handed, two-handed, polearm weapons | the skill of the way you hold it (a bastard sword asks One Handed in one hand, Two Handed in two) |
+| Javelins, throwing axes and knives | Throwing when thrown, their melee skill when held |
+| Shields | Athletics |
+| Armour (head, body, legs, gloves, cape) | Athletics |
+| Bows / crossbows / slings | Bow / Crossbow / Throwing |
+| Horses | Riding |
 
-Example: with One Handed 30, a top sword (R 90, 25% more raw damage) loses about 12% damage and 8% swing speed, so
-it comes out about **1.01x** a standard sword you fully master (R 30). At skill 90 you get the whole 1.25x.
+Arrows, bolts, stones, banners, pack animals, harness and goods ask nothing. Arrows and bolts use the bow or crossbow
+in your hands.
 
-The inventory tooltip shows "Requires: <skill> <R>" (green when met, red when short) and, when short, the exact
-"Unskilled: ..." penalties. The tooltip uses your plain skill; in battle the game's effective skill counts (captain
-perks and the like), as vanilla does.
+### The tier table
+
+R follows the item's exact tier (vanilla's "Tier N" is that number rounded) in straight lines between these points,
+rounded to 5:
+
+| Item tier | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7.5 and up |
+|---|---|---|---|---|---|---|---|---|
+| R | 0 | 20 | 45 | 75 | 100 | 125 | 150 | 200 |
+
+Vanilla shows "Tier 6" from an exact tier of 5.5, so Tier 6 gear asks about 140 to 200. Some examples:
+
+| Item | Shown tier | R |
+|---|---|---|
+| Backsword | 3 | 75 |
+| Heavy Mail Shirt with Wide Belt | 5 | 125 |
+| Falx | 6 | 160 |
+| Highland Fine Two Handed Sword | 6 | 160 |
+| Luxury Scale Armor (20 kg) | 6 | 200 |
+| Noble Long Bow | 6 | 180 |
+| Swenryn Pony / Glintor Pony | 4 / 3 | 100 / 60 |
+| Druzhinnik Kite Shield | 6 | 160 |
+
+Bows, crossbows and horses use this table too (not their vanilla difficulty), and they no longer lock you out: you
+can equip them and mount any horse, and pay the penalty instead.
+
+## How much it costs: the snap curve
+
+- **Skill at or above R: no penalty at all.** The moment you reach the requirement, the item is yours.
+- Below R the penalty starts at once at its **Low** value and grows in straight lines, by how much of R you have:
+
+| Your skill as a share of R | just under 100% | 90% | 80% | 60% | 45% | 30% and below |
+|---|---|---|---|---|---|---|
+| Penalty | Low | | | Mid | | High |
+| Weapon damage (default) | -25% | -31% | -38% | -50% | -63% | -75% |
+
+Each stat has its own Low / Mid / High (defaults):
+
+| Item | Stat | Low / Mid / High |
+|---|---|---|
+| Melee weapon | damage | -25 / -50 / -75% |
+| | swing and thrust speed | -12.5 / -25 / -37.5% |
+| | handling | -12.5 / -25 / -37.5% |
+| Thrown weapon (javelin thrown) | damage | -25 / -50 / -75% |
+| | inaccuracy | +25 / +50 / +75% |
+| Bow / crossbow / sling | damage | -25 / -50 / -75% |
+| | draw and reload speed | -12.5 / -25 / -37.5% |
+| | inaccuracy | +25 / +50 / +75% |
+| Shield | damage the shield takes | +25 / +50 / +75% |
+| Armour | foot speed | -20 / -40 / -60% |
+| Horse | speed, maneuver | -25 / -50 / -75% |
+
+**Armour** is judged piece by piece, each by its own R, and the result is shared by weight: a 1 kg helmet just out of
+reach under a 20 kg cuirass you master costs about 1% speed; the whole set far out of reach costs the full 60%.
+
+Example: One Handed 71 with a Tier 6 sword (R 160, 44% of R) loses 63% of its damage. The same hero with a Tier 3
+sword (R 75, 95% of R) loses 28%; at One Handed 75 he loses nothing.
+
+## Who is affected
+
+| Who | Default |
+|---|---|
+| You | on |
+| Your clan's heroes (companions, family) | on |
+| Every other hero, friend and foe | on |
+| Penalties in tournaments | on |
+| Troops | **never** - vanilla, including vanilla's bow and horse locks |
+
+A hero the toggles leave out is treated like a troop: vanilla stats, vanilla locks, vanilla tooltip.
+
+## The inventory tooltip
+
+- `Requires: Two Handed 160 (yours 71)` - red when short, green when met, per usage tab (a bastard sword shows One
+  Handed on its one-handed tab and Two Handed on its two-handed tab).
+- When short, the stat rows show the value **after** the penalty, then the vanilla value minus the penalty:
+  `Swing Damage: 37 (99-62) Cut`, horse `Speed: 39 (52-13)`, bow `Accuracy: 79 (83-4)`. Comparing two items, the
+  green / red "better / worse" colours compare the after-penalty values.
+- Shields and armour have no stat row for their penalty, so they get one red line instead:
+  `Unskilled: +50% shield damage taken`, or `up to -40% foot speed (shared by armour weight)`.
 
 ## Settings
 
-Every number is in the in-game **Mod Configuration Menu** (Mod Options > Gear Mastery), if you have MCM
-(Bannerlord.MBOptionScreen) installed: who is affected (player, companions, other heroes, tournaments - troops
-never), the requirement tier table and per-category scales, the penalty curve and every Low / Mid / High penalty
-per category, and a debug CSV dump. Changes apply at once (requirements from the next item looked at). Without MCM
-the mod runs on its defaults.
+Everything is in the in-game **Mod Configuration Menu** (Mod Options > Gear Mastery) if you have MCM
+(Bannerlord.MBOptionScreen) installed:
+
+- **Who is affected**: the four toggles above.
+- **Requirements**: every point of the tier table, the top tier, and a scale per category (melee, shields, armour,
+  ranged, horses; 0 = no requirement for that category).
+- **Penalty curve**: where Mid and High sit (default 60% and 30% of R).
+- **Every Low / Mid / High** of every stat above.
+- **Debug**: write `item_requirements.csv` (every item's tier, skill and R) at game start.
+
+Changes apply at once: penalties at the next hit or stat refresh, the tooltip when you next hover, requirements on
+the next item looked at. Sliders set out of order are read sanely: a Mid below Low counts as Low, a High below Mid as
+Mid, and a tier asking less than the tier below it asks the same as that one. A High point set above the Mid point
+puts both back to 60% / 30%. Without MCM the mod runs on the defaults.
 
 ## Compatibility
 
-- **trax_combat_enhancements** and other mods that change the combat models: Gear Mastery wraps whatever agent-stat
-  and damage models were registered before it and only multiplies on top, so both mods' effects stack. Load order
-  does not matter for that.
+- **trax_combat_enhancements** (and other mods that change the combat models): Gear Mastery wraps whatever
+  agent-stat and damage models were registered before it and only multiplies on top. Trax's Athletics stamina and
+  Gear Mastery's penalties stack (a tired hero in armour above his Athletics is slower for both reasons). Load order
+  does not matter for that; Gear Mastery asks to load after trax so the chain is tidy.
 - **War Sails**: its naval models are wrapped the same way.
-- Needs **Harmony** (Bannerlord.Harmony) for the inventory part: equipping bows and horses above your skill and the
-  tooltip lines. If a game update breaks one of those patches, that part is skipped and logged; battles still work.
+- Needs **Harmony** (Bannerlord.Harmony): equipping bows and horses above vanilla's lock, mounting any horse in
+  battle, and the tooltip. If a game update breaks one of those patches, that part is skipped and logged; the
+  combat penalties still work.
+- MCM is optional.
 - Nothing is saved into your campaign. You can add or remove the mod mid-campaign.
 
 ## Known limits
 
-- An arrow's damage penalty follows the launcher in your hands when it lands. Switch to a sword before your arrow
+- **The tooltip uses your plain skill; battle uses the effective skill** (captain perks and the like add to it, as in
+  vanilla), so a battle can be a few points kinder than the tooltip.
+- An arrow's damage penalty follows the launcher in your hands when it lands: switch to a sword before your arrow
   hits and that arrow pays nothing.
-- A throwing weapon used in melee (a javelin as a spear) is judged by its Throwing requirement.
-- Horses: anyone who can ride at all can now mount any horse, troops included, also with `HeroesOnly` (then
-  without the penalty).
+- The horse tooltip shows the horse without harness; battle multiplies the speed after harness and Riding bonuses, so
+  the numbers differ a little, the percentage does not.
+- A horse a hero mounts in the middle of a battle now also gets vanilla's own Riding bonus from him (vanilla forgot
+  to refresh it).
 - Items another mod gives a vanilla difficulty on melee weapons, shields or armour stay hard-locked as in vanilla.
 - The tooltip text is English only for now.
 

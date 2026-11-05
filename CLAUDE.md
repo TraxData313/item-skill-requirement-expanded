@@ -1,12 +1,12 @@
 # Gear Mastery
 
-Bannerlord 1.4.8 (+ War Sails) mod: **soft skill requirements** on melee weapons, shields and armour. You CAN equip
-anything; if your skill is below the item's requirement, the requirement shows in red and you fight with scaled
-penalties. Bows, crossbows and horses become soft too. Heroes only; troops fight as in vanilla.
+Bannerlord 1.4.8 (+ War Sails) mod: **soft skill requirements** on every weapon, shield, armour piece, bow /
+crossbow / sling and horse. Covered heroes CAN equip and ride anything; below an item's requirement it shows red and
+they fight with penalties (snap curve). Troops always fight as in vanilla, locks included.
 
-Status and the agreed design: `.manager\progress.md` (the resume file, committed). All 5 steps are done (scaffold,
-requirements core, combat penalties, inventory unlock + tooltip, review + settings file + docs). Not yet playtested
-in game; no remote yet. Player docs: `README.md`.
+Status and the agreed design: `.manager\progress.md` (the resume file, committed). Round 1 (steps 1-5) and round 2
+(steps 6-10: tier table, snap curve + who-filter, MCM, tooltip v2, final review) are done; pushed to `origin/main`.
+Not yet playtested in game as a whole (round 2 not deployed while Toni plays). Player docs: `README.md`.
 
 ## Design (agreed with Toni, 2026-11-05)
 
@@ -28,7 +28,12 @@ in game; no remote yet. Player docs: `README.md`.
 - Who pays (`AgentGear.Pays`): never troops (non-hero agents keep vanilla, mount lock included). Toggles
   `ApplyToPlayer`, `ApplyToCompanions` (player clan heroes), `ApplyToOtherHeroes`, `ApplyInTournaments` (mission has
   SandBox's `TournamentBehavior`). Horse penalty and mount unlock follow the RIDER: MountDifficulty is zeroed only
-  under a covered rider, and a prefix on `Agent.CheckSkillForMounting` lets covered heroes mount any horse.
+  under a covered rider, and a prefix on `Agent.CheckSkillForMounting` lets covered heroes mount any horse. The
+  inventory honours the same toggles (`AgentGear.CharacterPays`): the CanUseItem unlock and our tooltip lines only for
+  covered heroes; anyone else gets vanilla's lock and vanilla's tooltip.
+- Misordered MCM values are clamped, never inverted: anchors run as a running maximum (Mid >= Low, High >= Mid), the
+  tier table never falls with tier (`Requirements.FromTable`); a High ratio not below the Mid ratio falls back to
+  0.6 / 0.3. R = 0 asks nothing (shortfall 0).
 - Inventory tooltip (round 2, step 9, `Patches\ItemTooltipPatch`): "Requires: <Skill> <R> (yours <n>)" red/green per
   usage tab; when short (and the who-toggles cover the character) vanilla's stat rows show the after-penalty value
   with the breakdown ("Swing Damage: 37 (99-62) Cut"), from Core `TooltipStats` (same functions as the models);
@@ -83,6 +88,11 @@ Options > Gear Mastery; MCM saves them under `Configs\ModSettings\Global\GearMas
 - Patch nothing at module load: any Harmony patch goes in `OnGameStart`, each in its own try/catch with a log line
   (see my-troops-gear's CLAUDE.md for the 2026-11-03 crash this avoids).
 - No saved types: the mod must stay removable mid-campaign.
+- Battle and tooltip must agree: every tooltip number comes from the same Core functions the models call
+  (`CombatPenalties.ForWielded / DamageMultiplier / InaccuracyMultiplier`, `Penalties.*`), at the same per-usage
+  skill. Known gap, by design: the tooltip reads RAW skill (GetSkillValue), battle the model's effective skill.
+- `ItemRequirements.Reset()` after any requirement setting change (MCM does it; a generation counter keeps a racing
+  lookup from writing a stale R back).
 - **MCM is optional**: MCM types only inside method bodies of `McmSettings` (fluent builder, `Action<object>` instance
   methods - never a type deriving from / a field of / a lambda over an MCM type), else the game's `GetTypes()` refuses
   the whole mod without MCM. Check: `dotnet run --project ..\trax_combat_enhancements\tools\AssemblyGuard -c Release --
