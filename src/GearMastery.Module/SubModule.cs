@@ -1,7 +1,10 @@
 using System;
+using System.Linq;
 using GearMastery.Core;
+using GearMastery.Models;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
+using TaleWorlds.MountAndBlade.ComponentInterfaces;
 
 namespace GearMastery
 {
@@ -13,13 +16,83 @@ namespace GearMastery
             ModLog.Info("load", ModInfo.DisplayName + " loaded (" + typeof(SubModule).Assembly.GetName().Version + ")");
         }
 
-        // Decorator models (Models\) get registered here in step 3, the way trax_combat_enhancements does it:
-        // starter.AddModel<AgentStatCalculateModel>(new GearMasteryStatModel(...)) - the game hands the previously
-        // registered model in as BaseModel and every override delegates to it, so trax's decorators and ours stack.
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);
             ItemRequirements.Reset();
+            AgentGear.Reset();
+            try
+            {
+                ModLog.Info("load", "game start: " + (game?.GameType?.GetType().Name ?? "unknown game type"));
+                RegisterModels(gameStarterObject);
+            }
+            catch (Exception e)
+            {
+                ModLog.Error("load", "OnGameStart", e);
+            }
+        }
+
+        /// <summary>
+        /// The decorators (trax_combat_enhancements' RegisterModels pattern): each only when the game type already has
+        /// that model, so BaseModel is never null. AddModel hands us the previously registered model as BaseModel;
+        /// MissionGameModels then picks the last registered.
+        /// </summary>
+        private static void RegisterModels(IGameStarter starter)
+        {
+            var existing = starter.Models.ToList();
+
+            try
+            {
+                var statModels = existing.OfType<AgentStatCalculateModel>().ToList();
+                if (statModels.Count > 0)
+                {
+                    var stats = new GearMasteryStatModel(statModels);
+                    starter.AddModel<AgentStatCalculateModel>(stats);
+                    ModLog.Info("models", "agent stat decorator registered over " + stats.BaseModelName
+                        + " - weapon damage / swing / handling / reload / inaccuracy, armour foot speed, horse speed / maneuver, mount lock lifted; tournament AI-level fix "
+                        + (GearMasteryStatModel.AiLevelFixAvailable ? "active over " + statModels.Count + " base model(s)" : "UNAVAILABLE (field not found)"));
+                }
+                else
+                {
+                    ModLog.Info("models", "this game type has no AgentStatCalculateModel - stat decorator not registered");
+                }
+            }
+            catch (Exception e)
+            {
+                ModLog.Error("models", "stat decorator registration", e);
+            }
+
+            try
+            {
+                if (existing.Any(m => m is AgentApplyDamageModel))
+                {
+                    var damage = new GearMasteryDamageModel();
+                    starter.AddModel<AgentApplyDamageModel>(damage);
+                    ModLog.Info("models", "damage decorator registered over " + damage.BaseModelName + " - shield damage taken");
+                }
+                else
+                {
+                    ModLog.Info("models", "this game type has no AgentApplyDamageModel - damage decorator not registered");
+                }
+            }
+            catch (Exception e)
+            {
+                ModLog.Error("models", "damage decorator registration", e);
+            }
+        }
+
+        public override void OnMissionBehaviorInitialize(Mission mission)
+        {
+            base.OnMissionBehaviorInitialize(mission);
+            try
+            {
+                if (mission == null || GameNetwork.IsMultiplayer) return;
+                mission.AddMissionBehavior(new MountRefreshLogic());
+            }
+            catch (Exception e)
+            {
+                ModLog.Error("mission", "OnMissionBehaviorInitialize", e);
+            }
         }
 
         // Items are registered and the BasicModels (ItemValueModel -> Tierf) are in place by now, campaign and
@@ -42,6 +115,7 @@ namespace GearMastery
         {
             base.OnGameEnd(game);
             ItemRequirements.Reset();
+            AgentGear.Reset();
         }
 
         /// <summary>True when loaded from Modules\GearMastery.Dev (tools\deploy.ps1).</summary>
