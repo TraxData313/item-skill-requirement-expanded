@@ -24,10 +24,17 @@ namespace GearMastery
             ModLog.Info("load", ModInfo.DisplayName + " loaded (" + typeof(SubModule).Assembly.GetName().Version + ")");
         }
 
+        // MCM's own module registers its services in OnSubModuleLoad; the main menu is the first safe point for a page.
+        protected override void OnBeforeInitialModuleScreenSetAsRoot()
+        {
+            base.OnBeforeInitialModuleScreenSetAsRoot();
+            McmSettings.TryRegister("main menu");
+        }
+
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
         {
             base.OnGameStart(game, gameStarterObject);
-            ItemRequirements.Settings = SettingsLoader.Load(); // before Reset: the table is rebuilt with these settings
+            McmSettings.TryRegister("game start"); // no-op once registered (normally at the main menu)
             ItemRequirements.Reset();
             AgentGear.Reset();
             try

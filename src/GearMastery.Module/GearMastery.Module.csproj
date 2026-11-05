@@ -33,6 +33,19 @@
     </Reference>
   </ItemGroup>
 
+  <!-- Mod Configuration Menu (MCM v5): a SOFT runtime dependency. Referenced to compile the settings page, never
+       shipped (the Bannerlord.MBOptionScreen module provides MCMv5.dll). MCM types may appear in method bodies only
+       (McmSettings) - without MCM the mod runs on the defaults. Falls back to Modules\Bannerlord.MBOptionScreen. -->
+  <PropertyGroup>
+    <McmBinFolder Condition="!Exists('$(McmBinFolder)\MCMv5.dll')">$(GameFolder)\Modules\Bannerlord.MBOptionScreen\bin\Win64_Shipping_Client</McmBinFolder>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="MCMv5">
+      <HintPath>$(McmBinFolder)\MCMv5.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
   <!-- The game assemblies are referenced from the local install and never copied to output -->
   <ItemGroup>
     <Reference Include="SandBox">

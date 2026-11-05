@@ -35,16 +35,18 @@ in game; no remote yet. Player docs: `README.md`.
 ## Layout
 
 - `src\GearMastery.Core` - netstandard2.0, **no game references**: requirement table maths, shortfall, penalty
-  scaling, settings, `SettingsFile` (settings.json text: commented writer, dependency-free reader). Unit-tested.
+  scaling, settings, `SettingsMenu` (every setting's MCM group / label / hint / range and its mapping onto
+  `GearMasterySettings` - the MCM adapter, game-free). Unit-tested.
 - `src\GearMastery.Module` - net472 module (assembly `GearMastery.dll`, namespace `GearMastery`): `SubModule`,
-  `ModLog`, `SettingsLoader` (reads settings.json at every game start), `ItemRequirements` (the table),
+  `ModLog`, `McmSettings` (the MCM page, fluent builder), `ItemRequirements` (the table + THE live settings object),
   `AgentGear` (item of a blow, shortfall from the model's effective skill - deliberately NOT cached per agent:
   captains / Phalanx / level-ups move it mid-battle), `MountRefreshLogic` (refreshes a horse when mounted);
   `Models\` the decorator models; `Patches\` the Harmony patches (`MountSkillPatch` once at the first game start of any type; inventory `CanUseItemPatch`, `ItemTooltipPatch` once at the first campaign start). Depends on `Bannerlord.Harmony` (not shipped).
 - `tests\GearMastery.Core.Tests` - xunit, net8.0.
 - `module\` - SubModule.xml. Build output lands in `module\bin` (git-ignored).
 - Machine paths: `Directory.Build.props.user` (git-ignored) sets `GameFolder` and `HarmonyBinFolder` (falls back to
-  `Modules\Bannerlord.Harmony` when that has no 0Harmony.dll).
+  `Modules\Bannerlord.Harmony` when that has no 0Harmony.dll) and `McmBinFolder` (falls back to
+  `Modules\Bannerlord.MBOptionScreen`).
 
 ## Commands
 
@@ -58,9 +60,10 @@ Release identity in `module\SubModule.xml` is Id `GearMastery`; only deploy.ps1 
 the non-dev module into the game's Modules (it would load beside `GearMastery.Dev`).
 
 deploy.ps1 refuses if the DLLs are locked (game running). Never launch, restart or kill the game without asking Toni.
-Mod log: `Documents\Mount and Blade II Bannerlord\Configs\GearMastery\gear_mastery.log`; settings (created with
-defaults when missing, bad values -> default + `[settings]` log line): `...\Configs\GearMastery\settings.json`.
-A new setting = a property in `GearMasterySettings` + a line in `SettingsFile.All` (key, words, range).
+Mod log: `Documents\Mount and Blade II Bannerlord\Configs\GearMastery\gear_mastery.log`. Settings live in MCM (Mod
+Options > Gear Mastery; MCM saves them under `Configs\ModSettings\Global\GearMastery`); every change is logged as
+`[settings] X: old -> new (MCM)`. Without MCM: defaults + one `[mcm]` line. A new setting = a property in
+`GearMasterySettings` + a line in `SettingsMenu.All` (group, label, hint, range; `Req(...)` when it changes requirements).
 
 ## Design rules
 
@@ -76,3 +79,7 @@ A new setting = a property in `GearMasterySettings` + a line in `SettingsFile.Al
 - Patch nothing at module load: any Harmony patch goes in `OnGameStart`, each in its own try/catch with a log line
   (see my-troops-gear's CLAUDE.md for the 2026-11-03 crash this avoids).
 - No saved types: the mod must stay removable mid-campaign.
+- **MCM is optional**: MCM types only inside method bodies of `McmSettings` (fluent builder, `Action<object>` instance
+  methods - never a type deriving from / a field of / a lambda over an MCM type), else the game's `GetTypes()` refuses
+  the whole mod without MCM. Check: `dotnet run --project ..\trax_combat_enhancements\tools\AssemblyGuard -c Release --
+  module\bin\Win64_Shipping_Client\GearMastery.dll MCMv5`.

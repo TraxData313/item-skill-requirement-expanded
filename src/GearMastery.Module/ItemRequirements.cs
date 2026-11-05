@@ -110,8 +110,9 @@ namespace GearMastery
         private static readonly ConcurrentDictionary<ItemObject, ItemRequirement?> Cache =
             new ConcurrentDictionary<ItemObject, ItemRequirement?>(RefComparer.Instance);
 
-        /// <summary>Live settings, from settings.json at every game start (<see cref="SettingsLoader"/>).</summary>
-        public static GearMasterySettings Settings { get; set; } = new GearMasterySettings();
+        /// <summary>THE live settings object, read at use time. The MCM page (<see cref="McmSettings"/>) writes it in place
+        /// (a requirement change also calls <see cref="Reset"/>); without MCM it keeps the defaults. Never replaced.</summary>
+        public static GearMasterySettings Settings { get; } = new GearMasterySettings();
 
         /// <summary>Forget everything (new game / game end: models and items may differ).</summary>
         public static void Reset() => Cache.Clear();

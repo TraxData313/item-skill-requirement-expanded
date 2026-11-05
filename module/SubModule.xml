@@ -19,6 +19,9 @@
     <DependedModuleMetadata id="Native" order="LoadBeforeThis" />
     <DependedModuleMetadata id="SandBoxCore" order="LoadBeforeThis" />
     <DependedModuleMetadata id="Sandbox" order="LoadBeforeThis" />
+    <!-- Mod Configuration Menu: optional. Loaded before us so its settings page is ready at the main menu; without it
+         the mod runs on the default settings. -->
+    <DependedModuleMetadata id="Bannerlord.MBOptionScreen" order="LoadBeforeThis" optional="true" />
     <!-- Optional, load-before only, so their models register first and our decorators wrap them
          (every decorator delegates to BaseModel, so either order works - this one is tidy). -->
     <DependedModuleMetadata id="CustomBattle" order="LoadBeforeThis" optional="true" />

@@ -46,25 +46,11 @@ perks and the like), as vanilla does.
 
 ## Settings
 
-`Documents\Mount and Blade II Bannerlord\Configs\GearMastery\settings.json` is created with the defaults the first
-time you start a game. Every key has a comment above it. Edit it, then load a save or start a custom battle: it is
-read at every game start, no restart needed. A wrong or out-of-range value falls back to its default and is noted
-in `gear_mastery.log` in the same folder. Delete the file to get a fresh one.
-
-| Key | Default | Meaning |
-|---|---|---|
-| `WeaponSlope`, `ShieldSlope`, `ArmourSlope` | 12, 12, 10 | requirement per item tier |
-| `WeaponCap`, `ArmourCap` | 100, 100 | highest requirement |
-| `PenaltyExponent` | 0.5 | curve shape (1 = linear) |
-| `MaxWeaponDamagePenalty`, `MaxSwingSpeedPenalty`, `MaxHandlingPenalty` | 0.15, 0.10, 0.15 | melee / throwing |
-| `MaxShieldDamageTakenBonus` | 0.25 | shields |
-| `MaxArmourSpeedPenalty` | 0.08 | armour |
-| `MaxRangedDamagePenalty`, `MaxReloadSpeedPenalty`, `MaxInaccuracyBonus` | 0.15, 0.10, 0.30 | bows, crossbows, slings |
-| `MaxHorseSpeedPenalty`, `MaxHorseManeuverPenalty` | 0.10, 0.10 | horses |
-| `HeroesOnly` | false | true = only heroes pay; troops fight as in vanilla |
-| `DumpRequirementsCsv` | false | write `item_requirements.csv` with every item's requirement |
-
-Set a penalty to 0 to switch it off.
+Every number is in the in-game **Mod Configuration Menu** (Mod Options > Gear Mastery), if you have MCM
+(Bannerlord.MBOptionScreen) installed: who is affected (player, companions, other heroes, tournaments - troops
+never), the requirement tier table and per-category scales, the penalty curve and every Low / Mid / High penalty
+per category, and a debug CSV dump. Changes apply at once (requirements from the next item looked at). Without MCM
+the mod runs on its defaults.
 
 ## Compatibility
 

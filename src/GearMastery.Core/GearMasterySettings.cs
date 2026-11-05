@@ -4,7 +4,8 @@ namespace GearMastery.Core
     /// Every tunable number of the mod (round 2: penalties bite - an item one or two tiers above your skill must come
     /// out WORSE than the one you meet, Toni 2026-11-05). The maths in
     /// <see cref="Requirements"/> and <see cref="Penalties"/> clamps nonsense values itself (negative scale, penalty
-    /// above 100%, anchor ratios out of order), so a hand-edited settings file can never produce a negative multiplier.
+    /// above 100%, anchor ratios out of order), so no value can ever produce a negative multiplier. Shown and edited in MCM
+    /// through <see cref="SettingsMenu"/> (a new setting = a property here + a line in <see cref="SettingsMenu.All"/>).
     /// </summary>
     public sealed class GearMasterySettings
     {
@@ -12,7 +13,7 @@ namespace GearMastery.Core
         // R = round-to-5(table(item.Tierf) x category scale). The table is piecewise-linear through the points below,
         // held flat outside them. Vanilla shows "Tier N" for round(Tierf) clamped to 0..6, so displayed "Tier 6" is
         // Tierf 5.5 and up (body armour reaches ~9) - it asks 140 at its low edge, 150 at 6.0, 200 from TopTier on.
-        // Plain properties on purpose: step 8 binds them to MCM one by one.
+        // Plain properties on purpose: SettingsMenu binds them to MCM one by one.
 
         /// <summary>Requirement at Tierf 0 (and below).</summary>
         public int RequirementAtTier0 { get; set; } = 0;
