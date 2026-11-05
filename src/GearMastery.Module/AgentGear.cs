@@ -47,7 +47,17 @@ namespace GearMastery
         public static PenaltyTarget Who(Agent agent)
         {
             if (!agent.IsHero) return PenaltyTarget.Troop;
-            var character = agent.Character;
+            var who = WhoOf(agent.Character);
+            if (who == PenaltyTarget.Player || who == PenaltyTarget.Companion) return who;
+            return agent.IsMainAgent ? PenaltyTarget.Player : PenaltyTarget.OtherHero;
+        }
+
+        /// <summary>Who a character is, outside a mission (the inventory tooltip): campaign heroes by their Hero
+        /// (main hero / player clan / other); the game's PlayerTroop is the player; other heroes "other"; anyone
+        /// else a troop.</summary>
+        public static PenaltyTarget WhoOf(BasicCharacterObject? character)
+        {
+            if (character == null) return PenaltyTarget.Troop;
             if (Campaign.Current != null && character is CharacterObject co)
             {
                 var hero = co.HeroObject;
@@ -58,10 +68,13 @@ namespace GearMastery
                     return clan != null && clan == Clan.PlayerClan ? PenaltyTarget.Companion : PenaltyTarget.OtherHero;
                 }
             }
-            if (agent.IsMainAgent || (character != null && ReferenceEquals(character, Game.Current?.PlayerTroop)))
-                return PenaltyTarget.Player;
-            return PenaltyTarget.OtherHero;
+            if (ReferenceEquals(character, Game.Current?.PlayerTroop)) return PenaltyTarget.Player;
+            return character.IsHero ? PenaltyTarget.OtherHero : PenaltyTarget.Troop;
         }
+
+        /// <summary>Would this character pay penalties (who-toggles; no tournament)? The inventory tooltip's filter.</summary>
+        public static bool CharacterPays(BasicCharacterObject? character) =>
+            CombatPenalties.AppliesTo(WhoOf(character), false, ItemRequirements.Settings);
 
         // ---- tournament flag, cached per mission (one immutable pair, swapped atomically: blows may run off-thread)
 

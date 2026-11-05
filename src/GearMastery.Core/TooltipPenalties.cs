@@ -39,8 +39,9 @@ namespace GearMastery.Core
     }
 
     /// <summary>
-    /// What the inventory tooltip says about an item the character is short on. The SAME multipliers the battle
-    /// decorators apply (<see cref="Penalties"/>), turned into whole percents; parts that round to 0 are dropped.
+    /// The compact "Unskilled: ..." line of the inventory tooltip, for penalties with no stat row of their own (shield
+    /// damage taken, armour foot speed) - and as a fallback when no stat row could be rewritten. The SAME multipliers
+    /// the battle decorators apply (<see cref="Penalties"/>), turned into whole percents; parts that round to 0 are dropped.
     /// </summary>
     public static class TooltipPenalties
     {
@@ -51,12 +52,17 @@ namespace GearMastery.Core
         /// The penalties of an item of this kind at this shortfall, in display order. Empty when the shortfall is 0
         /// or every part rounds to 0%.
         /// </summary>
-        public static IReadOnlyList<PenaltyPart> For(SkillKind kind, float shortfall, GearMasterySettings settings)
+        public static IReadOnlyList<PenaltyPart> For(SkillKind kind, float shortfall, GearMasterySettings settings, bool thrownUsage = false)
         {
             var parts = new List<PenaltyPart>(3);
             if (settings == null || !(shortfall > 0f)) return parts;
             switch (kind)
             {
+                case SkillKind.Weapon when thrownUsage:
+                    // Thrown usage: the ranged anchors, as the models (CombatPenalties.ForWielded / DamageMultiplier).
+                    Add(parts, PenaltyStat.Damage, CombatPenalties.DamageMultiplier(kind, false, shortfall, settings, true));
+                    Add(parts, PenaltyStat.Inaccuracy, CombatPenalties.InaccuracyMultiplier(kind, true, shortfall, settings));
+                    break;
                 case SkillKind.Weapon:
                     Add(parts, PenaltyStat.Damage, Penalties.WeaponDamageMultiplier(shortfall, settings));
                     Add(parts, PenaltyStat.SwingSpeed, Penalties.SwingSpeedMultiplier(shortfall, settings));

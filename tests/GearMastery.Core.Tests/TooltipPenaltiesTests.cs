@@ -42,6 +42,14 @@ namespace GearMastery.Core.Tests
         }
 
         [Fact]
+        public void Thrown_usage_shows_damage_and_inaccuracy()
+        {
+            var parts = TooltipPenalties.For(SkillKind.Weapon, 1f, Defaults, thrownUsage: true);
+            Assert.Equal(new[] { PenaltyStat.Damage, PenaltyStat.Inaccuracy }, parts.Select(p => p.Stat));
+            Assert.Equal(new[] { -75, 75 }, parts.Select(p => p.Percent));
+        }
+
+        [Fact]
         public void Full_shortfall_weapon_shows_the_maxima()
         {
             var parts = TooltipPenalties.For(SkillKind.Weapon, 1f, Defaults);

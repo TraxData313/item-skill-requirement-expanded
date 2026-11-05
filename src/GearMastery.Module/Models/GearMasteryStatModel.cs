@@ -16,8 +16,8 @@ namespace GearMastery.Models
     ///
     /// - <see cref="UpdateAgentStats"/>, after the base (which assigns every property fresh, so nothing compounds):
     ///   a human's wielded weapon - SwingSpeedMultiplier, ThrustOrRangedReadySpeedMultiplier, HandlingMultiplier
-    ///   (melee / thrown) or ReloadSpeed, ThrustOrRangedReadySpeedMultiplier (draw), WeaponInaccuracy (bow / crossbow
-    ///   / sling); on foot, MaxSpeedMultiplier by the worn armour. Only for agents the who-filter covers
+    ///   (melee usage), WeaponInaccuracy only (thrown usage, ranged anchors) or ReloadSpeed,
+    ///   ThrustOrRangedReadySpeedMultiplier (draw), WeaponInaccuracy (bow / crossbow / sling); on foot, MaxSpeedMultiplier by the worn armour. Only for agents the who-filter covers
     ///   (<see cref="AgentGear.Pays"/>: heroes by toggle, never troops). A HORSE agent under a covered RIDER:
     ///   MountDifficulty set to 0 (lifts vanilla's mounting lock - Agent.CheckSkillForMounting, the "not enough
     ///   riding" focus text and the AI's CanAgentRideMount all read it) and MountSpeed / MountManeuver by the rider's
@@ -25,7 +25,7 @@ namespace GearMastery.Models
     /// - <see cref="GetWeaponDamageMultiplier"/>: the one damage hook for melee AND missiles
     ///   (MissionCombatMechanicsHelper.ComputeBlowMagnitudeMelee / ...Missile multiply the base magnitude by it,
     ///   before armour), so no damage-model collision decoding is needed. An ammo blow takes the launcher in hand.
-    /// - <see cref="GetWeaponInaccuracy"/>: the engine's callback (Agent.GetWeaponInaccuracy) for a launcher.
+    /// - <see cref="GetWeaponInaccuracy"/>: the engine's callback (Agent.GetWeaponInaccuracy) for a launcher or a thrown usage.
     /// - <see cref="CanAgentRideMount"/>: the base's answer, or (covered agents only) yes when only skill said no.
     ///
     /// The tournament AI-level fix is mirrored from trax: TournamentBehavior sets the AI level on the TOP model only
@@ -131,7 +131,8 @@ namespace GearMastery.Models
                 float s = AgentGear.Shortfall(this, agent, item, usage, out var req);
                 if (req != null && s > 0f)
                 {
-                    var m = CombatPenalties.ForWielded(req.Kind, s, settings);
+                    // Thrown usage (javelin in its throwing mode): ranged anchors - damage + aim, no swing / handling.
+                    var m = CombatPenalties.ForWielded(req.Kind, s, settings, usage != null && usage.IsRangedWeapon);
                     if (!m.IsIdentity)
                     {
                         p.SwingSpeedMultiplier *= m.Swing;
@@ -180,7 +181,8 @@ namespace GearMastery.Models
                 if (item == null) return value;
                 float s = AgentGear.Shortfall(this, agent, item, usage, out var req);
                 if (req == null || s <= 0f) return value;
-                return value * CombatPenalties.DamageMultiplier(req.Kind, ammo, s, ItemRequirements.Settings);
+                // A thrown javelin's blow carries its thrown usage (RangedWeapon flag) -> ranged damage anchors.
+                return value * CombatPenalties.DamageMultiplier(req.Kind, ammo, s, ItemRequirements.Settings, !ammo && weapon.IsRangedWeapon);
             }
             catch (Exception e)
             {
@@ -198,8 +200,9 @@ namespace GearMastery.Models
                 var item = AgentGear.ItemOf(agent, weapon);
                 if (item == null) return value;
                 float s = AgentGear.Shortfall(this, agent, item, weapon, out var req);
-                if (req == null || req.Kind != SkillKind.Ranged || s <= 0f) return value;
-                return value * Penalties.InaccuracyMultiplier(s, ItemRequirements.Settings);
+                if (req == null || s <= 0f) return value;
+                // Launchers and thrown usages (weapon.IsRangedWeapon holds here); melee kinds give 1.
+                return value * CombatPenalties.InaccuracyMultiplier(req.Kind, weapon.IsRangedWeapon, s, ItemRequirements.Settings);
             }
             catch (Exception e)
             {

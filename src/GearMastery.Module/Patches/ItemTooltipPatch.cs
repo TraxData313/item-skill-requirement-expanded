@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GearMastery.Core;
 using HarmonyLib;
+using Helpers;
 using TaleWorlds.CampaignSystem.ViewModelCollection;
 using TaleWorlds.CampaignSystem.ViewModelCollection.Inventory;
 using TaleWorlds.Core;
@@ -12,18 +13,25 @@ using TaleWorlds.Localization;
 namespace GearMastery.Patches
 {
     /// <summary>
-    /// The inventory item tooltip (ItemMenuVM): "Requires: &lt;Skill&gt; &lt;R&gt;" red / green for every item we cover,
-    /// plus a red "Unskilled: ..." line when the character is short.
+    /// The inventory item tooltip (ItemMenuVM), round 2 (step 9):
+    /// - "Requires: &lt;Skill&gt; &lt;R&gt; (yours &lt;n&gt;)" red / green for every item we cover, per usage tab.
+    /// - When the character is short AND the who-toggles cover him: vanilla's own stat rows carry the value after the
+    ///   penalty with the breakdown ("Swing Damage: 37 (99-62) Cut", horse "Speed: 39 (52-13)"), computed by
+    ///   Core <see cref="TooltipStats"/> from the same functions the battle models use. In comparison mode each column
+    ///   uses its own item's penalty and the green / red better-worse colours compare the AFTER values.
+    /// - A compact red "Unskilled: ..." line only for penalties without a stat row (shield damage taken, armour foot
+    ///   speed), or as a fallback when no stat row of a short item could be rewritten.
     ///
-    /// Vanilla (1.4.8) - SetGeneralComponentTooltip draws, after the weight line, AddSkillRequirement for the target
-    /// item and (comparing) the compared item, but only when the target has a RelevantSkill and either item has
-    /// Difficulty &gt; 0. AddSkillRequirement colours by CharacterHelper.CanUseItem, which <see cref="CanUseItemPatch"/>
-    /// now opens up for bows and horses - so:
-    /// - Prefix on AddSkillRequirement: for an item we cover with R &gt; 0, draw our line (colour = skill &lt; R) and skip
-    ///   vanilla's. Anything else (e.g. an uncovered modded item with Difficulty) runs vanilla.
-    /// - Postfix on SetGeneralComponentTooltip: when vanilla did NOT call AddSkillRequirement (all our tier-based items:
-    ///   Difficulty 0), add the requirement line ourselves; then the penalty line. In comparison mode both property
-    ///   lists get a row (blank on the side without one) so the two columns stay aligned.
+    /// Vanilla (1.4.8) - RefreshItemTooltips(item, compared, usage) clears the lists, runs SetGeneralComponentTooltip
+    /// (weight, then AddSkillRequirement for target + compared when the target has a RelevantSkill and either item has
+    /// Difficulty &gt; 0), then the armour / weapon / horse section. So:
+    /// - Prefix on RefreshItemTooltips: remember the usage tab (SetGeneralComponentTooltip runs BEFORE
+    ///   SetWeaponComponentTooltip stores AlternativeUsageIndex).
+    /// - Prefix on AddSkillRequirement: for an item we cover with R &gt; 0, draw our line and skip vanilla's.
+    /// - Postfix on SetGeneralComponentTooltip: our requirement line when vanilla did not draw one, then the compact
+    ///   line (shield / armour). Both lists get a row (blank on the side without one) so the columns stay aligned.
+    /// - Postfix on RefreshItemTooltips: rewrite the stat rows (found by vanilla's own label TextObjects), recolour
+    ///   compared rows by after-penalty values; fallback compact line.
     /// Character = ItemMenuVM._character (the hero whose equipment is open); skill = GetSkillValue, as vanilla.
     /// </summary>
     internal static class ItemTooltipPatch
@@ -35,12 +43,40 @@ namespace GearMastery.Patches
         private static AccessTools.FieldRef<ItemMenuVM, ItemVM>? TargetRef;
         private static AccessTools.FieldRef<ItemMenuVM, ItemVM>? ComparedRef;
 
+        // Vanilla's stat-row labels (private readonly TextObject fields of ItemMenuVM) -> our row kind. A row is found
+        // by its DefinitionLabel == label.ToString(), so it follows the game's language.
+        private enum Row { SwingSpeed, SwingDamage, ThrustSpeed, ThrustDamage, Handling, Damage, Accuracy, Speed, Maneuver }
+
+        private static readonly (string Field, Row Row)[] LabelFields =
+        {
+            ("_swingSpeedText", Row.SwingSpeed),
+            ("_swingDamageText", Row.SwingDamage),
+            ("_thrustSpeedText", Row.ThrustSpeed),
+            ("_thrustDamageText", Row.ThrustDamage),
+            ("_handlingText", Row.Handling),
+            ("_damageText", Row.Damage),
+            ("_accuracyText", Row.Accuracy),
+            ("_speedText", Row.Speed),
+            ("_maneuverText", Row.Maneuver),
+        };
+
+        private static List<(AccessTools.FieldRef<ItemMenuVM, TextObject> Ref, Row Row)>? _labelRefs;
+
         private static void InitFieldRefs()
         {
             if (CharacterRef != null && TargetRef != null && ComparedRef != null) return;
             CharacterRef = AccessTools.FieldRefAccess<ItemMenuVM, BasicCharacterObject>("_character");
             TargetRef = AccessTools.FieldRefAccess<ItemMenuVM, ItemVM>("_targetItem");
             ComparedRef = AccessTools.FieldRefAccess<ItemMenuVM, ItemVM>("_comparedItem");
+        }
+
+        private static void InitLabelRefs()
+        {
+            if (_labelRefs != null) return;
+            var refs = new List<(AccessTools.FieldRef<ItemMenuVM, TextObject>, Row)>(LabelFields.Length);
+            foreach (var (field, row) in LabelFields)
+                refs.Add((AccessTools.FieldRefAccess<ItemMenuVM, TextObject>(field), row));
+            _labelRefs = refs;
         }
 
         /// <summary>Vanilla's own text and id (ItemMenuVM._requiresText), so it localises like the native line.</summary>
@@ -60,10 +96,22 @@ namespace GearMastery.Patches
         /// AlternativeUsageIndex, so the public property can still hold the previous item's tab at that point.</summary>
         public static void ApplyUsageIndex(Harmony harmony)
         {
-            var target = AccessTools.Method(typeof(ItemMenuVM), "RefreshItemTooltips", new[] { typeof(ItemVM), typeof(ItemVM), typeof(int) })
-                ?? throw new MissingMethodException("ItemMenuVM.RefreshItemTooltips(ItemVM, ItemVM, int) not found");
+            var target = RefreshItemTooltipsMethod();
             harmony.Patch(target, prefix: new HarmonyMethod(typeof(ItemTooltipPatch), nameof(RefreshItemTooltipsPrefix)));
         }
+
+        /// <summary>The stat rows after the penalty (postfix on RefreshItemTooltips, when every row exists).</summary>
+        public static void ApplyStatRows(Harmony harmony)
+        {
+            var target = RefreshItemTooltipsMethod();
+            InitFieldRefs();
+            InitLabelRefs(); // a renamed label field fails here (logged by the caller), not in every tooltip
+            harmony.Patch(target, postfix: new HarmonyMethod(typeof(ItemTooltipPatch), nameof(RefreshItemTooltipsPostfix)));
+        }
+
+        private static System.Reflection.MethodInfo RefreshItemTooltipsMethod() =>
+            AccessTools.Method(typeof(ItemMenuVM), "RefreshItemTooltips", new[] { typeof(ItemVM), typeof(ItemVM), typeof(int) })
+            ?? throw new MissingMethodException("ItemMenuVM.RefreshItemTooltips(ItemVM, ItemVM, int) not found");
 
         // Usage tab of the tooltip being built (UI thread only). 0 = primary usage, vanilla's default.
         private static int _usageIndex;
@@ -122,22 +170,249 @@ namespace GearMastery.Patches
                         __instance.ComparedItemProperties.Add(comparedReq != null ? RequirementLine(comparedReq, SkillOf(__instance, comparedReq, true), character, true) : Blank());
                 }
 
-                string? targetPenalty = targetReq != null ? PenaltyText(targetReq, SkillOf(__instance, targetReq, false), character) : null;
-                string? comparedPenalty = comparing && comparedReq != null ? PenaltyText(comparedReq, SkillOf(__instance, comparedReq, true), character) : null;
-                if (targetPenalty == null && comparedPenalty == null) return;
-                __instance.TargetItemProperties.Add(targetPenalty != null
-                    ? new ItemMenuTooltipPropertyVM(UnskilledText().ToString(), targetPenalty, 0, UIColors.NegativeIndicator)
-                    : Blank());
-                if (comparing)
-                    __instance.ComparedItemProperties.Add(comparedPenalty != null
-                        ? new ItemMenuTooltipPropertyVM("", comparedPenalty, 0, UIColors.NegativeIndicator)
-                        : Blank());
+                // Compact line only for what has no stat row: shield damage taken, armour foot speed.
+                string? targetPenalty = targetReq != null && HasNoStatRow(targetReq.Kind)
+                    ? PenaltyText(targetReq, SkillOf(__instance, targetReq, false), character, false) : null;
+                string? comparedPenalty = comparedReq != null && HasNoStatRow(comparedReq.Kind)
+                    ? PenaltyText(comparedReq, SkillOf(__instance, comparedReq, true), character, false) : null;
+                AddCompactLines(__instance, comparing, targetPenalty, comparedPenalty);
             }
             catch (Exception e)
             {
                 ModLog.ErrorOnce("ItemTooltipPatch.SetGeneralComponentTooltip", e);
             }
         }
+
+        private static bool HasNoStatRow(SkillKind kind) => kind == SkillKind.Shield || kind == SkillKind.Armour;
+
+        private static void AddCompactLines(ItemMenuVM vm, bool comparing, string? targetPenalty, string? comparedPenalty)
+        {
+            if (targetPenalty == null && comparedPenalty == null) return;
+            vm.TargetItemProperties.Add(targetPenalty != null
+                ? new ItemMenuTooltipPropertyVM(UnskilledText().ToString(), targetPenalty, 0, UIColors.NegativeIndicator)
+                : Blank());
+            if (comparing)
+                vm.ComparedItemProperties.Add(comparedPenalty != null
+                    ? new ItemMenuTooltipPropertyVM("", comparedPenalty, 0, UIColors.NegativeIndicator)
+                    : Blank());
+        }
+
+        // ---- stat rows after the penalty ----
+
+        /// <summary>One column of the tooltip: its item, the usage shown, and the character's shortfall on it.</summary>
+        private sealed class Side
+        {
+            public EquipmentElement Element;
+            public ItemRequirement? Req;
+            public int UsageIndex = -1;      // index into item.Weapons, -1 for horses / armour
+            public bool Thrown;              // the usage shown is a thrown one (javelin thrown)
+            public float Shortfall;          // 0 = vanilla values (not covered, met, or who-toggle off)
+            public int Rewritten;            // stat rows rewritten for this side
+            public bool Short => Req != null && Shortfall > 0f;
+        }
+
+        private static void RefreshItemTooltipsPostfix(ItemMenuVM __instance, int alternativeUsageIndex)
+        {
+            try
+            {
+                if (CharacterRef == null || TargetRef == null || ComparedRef == null || _labelRefs == null) return;
+                var targetVm = TargetRef(__instance);
+                var targetEl = targetVm?.ItemRosterElement.EquipmentElement ?? EquipmentElement.Invalid;
+                if (targetEl.Item == null) return;
+                var comparedVm = ComparedRef(__instance);
+                bool comparing = __instance.IsComparing && comparedVm?.ItemRosterElement.EquipmentElement.Item != null;
+                var character = CharacterRef(__instance);
+                if (character == null || !AgentGear.CharacterPays(character)) return; // who-toggle off: vanilla rows
+
+                var target = MakeSide(targetEl, alternativeUsageIndex, character);
+                Side? compared = null;
+                if (comparing)
+                {
+                    var comparedEl = comparedVm!.ItemRosterElement.EquipmentElement;
+                    compared = MakeSide(comparedEl, ComparedUsageIndex(targetEl, alternativeUsageIndex, comparedEl), character);
+                }
+                if (!target.Short && (compared == null || !compared.Short)) return;
+
+                var settings = ItemRequirements.Settings;
+                var targetRows = __instance.TargetItemProperties;
+                var comparedRows = __instance.ComparedItemProperties;
+                // Vanilla adds every stat row to both lists in step (compared rows have definition " "); anything else
+                // (dev-mode market lines) breaks the pairing, and then the compared column is left alone.
+                bool paired = compared != null && comparedRows != null && comparedRows.Count == targetRows.Count;
+
+                var labels = new Dictionary<string, Row>();
+                foreach (var (fieldRef, row) in _labelRefs)
+                {
+                    var text = fieldRef(__instance)?.ToString();
+                    if (!string.IsNullOrEmpty(text) && !labels.ContainsKey(text!)) labels[text!] = row;
+                }
+
+                for (int i = 0; i < targetRows.Count; i++)
+                {
+                    var tRow = targetRows[i];
+                    if (tRow?.DefinitionLabel == null || !labels.TryGetValue(tRow.DefinitionLabel, out var row)) continue;
+                    var cRow = paired ? comparedRows![i] : null;
+
+                    var tValue = StatValue(target, row, settings, compared, out int tBase, out int tAfter);
+                    int? cBase = null, cAfter = null;
+                    if (cRow != null && StatValue(compared!, row, settings, target, out int cb, out int ca) is TooltipStat)
+                    {
+                        cBase = cb;
+                        cAfter = ca;
+                    }
+
+                    bool tChanged = tValue != null && tAfter != tBase && Rewrite(tRow, tBase, tAfter);
+                    bool cChanged = cRow != null && cBase.HasValue && cAfter != cBase && Rewrite(cRow, cBase.Value, cAfter!.Value);
+                    if (tChanged) target.Rewritten++;
+                    if (cChanged) compared!.Rewritten++;
+                    if (!tChanged && !cChanged) continue;
+
+                    if (cRow != null && tValue != null && cBase.HasValue)
+                    {
+                        // Vanilla's better / worse colours, on the after-penalty values (higher is better for all these rows).
+                        int result = TooltipStats.Compare(tChanged ? tAfter : tBase, cChanged ? cAfter!.Value : cBase.Value);
+                        tRow.TextColor = ComparisonColor(result, false);
+                        cRow.TextColor = ComparisonColor(result, true);
+                    }
+                    else if (tChanged && cRow == null)
+                    {
+                        tRow.TextColor = UIColors.NegativeIndicator; // single tooltip: a penalised row reads red
+                    }
+                }
+
+                // Fallback: short on a weapon / launcher / horse but no row could be rewritten -> the compact line.
+                string? tLine = target.Short && target.Rewritten == 0 && !HasNoStatRow(target.Req!.Kind)
+                    ? PenaltyText(target.Req, SkillOfSide(target), character, target.Thrown) : null;
+                string? cLine = compared != null && compared.Short && compared.Rewritten == 0 && !HasNoStatRow(compared.Req!.Kind)
+                    ? PenaltyText(compared.Req, SkillOfSide(compared), character, compared.Thrown) : null;
+                if (tLine != null || cLine != null)
+                    AddCompactLines(__instance, compared != null && comparedRows != null && comparedRows.Count == targetRows.Count, tLine, cLine);
+            }
+            catch (Exception e)
+            {
+                ModLog.ErrorOnce("ItemTooltipPatch.RefreshItemTooltips", e);
+            }
+        }
+
+        private static Side MakeSide(EquipmentElement element, int usageIndex, BasicCharacterObject character)
+        {
+            var side = new Side { Element = element };
+            var item = element.Item;
+            var weapons = item?.Weapons;
+            if (weapons != null && weapons.Count > 0)
+                side.UsageIndex = usageIndex >= 0 && usageIndex < weapons.Count ? usageIndex : 0;
+            var req = ItemRequirements.Get(item);
+            if (req == null || !req.HasRequirement) return side;
+            side.Req = req;
+            var usage = side.UsageIndex >= 0 ? weapons![side.UsageIndex] : null;
+            side.Thrown = CombatPenalties.IsThrownUsage(req.Kind, usage != null && usage.IsRangedWeapon);
+            var skill = SkillOfSide(side);
+            side.Shortfall = skill == null ? 0f : Requirements.Shortfall(req.Value, ItemRequirements.GetSkill(character, skill));
+            return side;
+        }
+
+        private static SkillObject SkillOfSide(Side side) =>
+            side.UsageIndex >= 0 ? side.Req!.SkillForUsage(side.UsageIndex) : side.Req!.Skill;
+
+        /// <summary>The compared item's usage shown beside the target's tab - vanilla's GetComparedWeapon pairing.</summary>
+        private static int ComparedUsageIndex(EquipmentElement target, int targetUsage, EquipmentElement compared)
+        {
+            var tWeapons = target.Item?.Weapons;
+            if (compared.Item?.Weapons == null || compared.Item.Weapons.Count == 0) return -1;
+            if (tWeapons == null || targetUsage < 0 || targetUsage >= tWeapons.Count) return 0;
+            return ItemHelper.IsWeaponComparableWithUsage(compared.Item, tWeapons[targetUsage].WeaponDescriptionId, out int index) ? index : 0;
+        }
+
+        /// <summary>
+        /// The row's stat for this side, its vanilla number and the number after the penalty (equal when unpenalised).
+        /// Null when the row means nothing for this side (e.g. a shield's swing speed, an item we do not cover).
+        /// </summary>
+        /// An item we do not cover at all (only possible on the compared side) is read like the other side's family
+        /// (<paramref name="like"/>) with no penalty, so the colours still compare like with like.
+        private static TooltipStat? StatValue(Side side, Row row, GearMasterySettings settings, Side? like, out int value, out int after)
+        {
+            value = after = 0;
+            var kindSide = side.Req != null ? side : like;
+            if (kindSide?.Req == null || side.UsageIndex < 0 && kindSide.Req.Kind != SkillKind.Mount) return null;
+            var stat = StatFor(kindSide.Req.Kind, kindSide.Thrown, row);
+            if (stat == null) return null;
+            value = BaseValue(side, stat.Value);
+            float m = side.Req == null ? 1f : TooltipStats.Multiplier(side.Req.Kind, side.Thrown, stat.Value, side.Shortfall, settings);
+            after = TooltipStats.After(stat.Value, value, m);
+            return stat;
+        }
+
+        private static TooltipStat? StatFor(SkillKind kind, bool thrown, Row row)
+        {
+            switch (kind)
+            {
+                case SkillKind.Weapon when thrown:
+                    return row == Row.Damage ? TooltipStat.ThrownDamage : row == Row.Accuracy ? TooltipStat.Accuracy : (TooltipStat?)null;
+                case SkillKind.Weapon:
+                    return row switch
+                    {
+                        Row.SwingSpeed => TooltipStat.SwingSpeed,
+                        Row.SwingDamage => TooltipStat.SwingDamage,
+                        Row.ThrustSpeed => TooltipStat.ThrustSpeed,
+                        Row.ThrustDamage => TooltipStat.ThrustDamage,
+                        Row.Handling => TooltipStat.Handling,
+                        _ => (TooltipStat?)null,
+                    };
+                case SkillKind.Ranged:
+                    return row switch
+                    {
+                        Row.SwingSpeed => TooltipStat.LauncherSpeed,
+                        Row.Damage => TooltipStat.LauncherDamage,
+                        Row.Accuracy => TooltipStat.Accuracy,
+                        _ => (TooltipStat?)null,
+                    };
+                case SkillKind.Mount:
+                    return row == Row.Speed ? TooltipStat.MountSpeed : row == Row.Maneuver ? TooltipStat.MountManeuver : (TooltipStat?)null;
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>The same numbers vanilla's rows show (ItemMenuVM.SetWeaponComponentTooltip / SetHorseComponentTooltip).</summary>
+        private static int BaseValue(Side side, TooltipStat stat)
+        {
+            var el = side.Element;
+            int u = side.UsageIndex;
+            switch (stat)
+            {
+                case TooltipStat.SwingSpeed:
+                case TooltipStat.LauncherSpeed: return el.GetModifiedSwingSpeedForUsage(u);
+                case TooltipStat.SwingDamage: return el.GetModifiedSwingDamageForUsage(u);
+                case TooltipStat.ThrustSpeed: return el.GetModifiedThrustSpeedForUsage(u);
+                case TooltipStat.ThrustDamage:
+                case TooltipStat.LauncherDamage: return el.GetModifiedThrustDamageForUsage(u);
+                case TooltipStat.ThrownDamage: return el.GetModifiedMissileDamageForUsage(u);
+                case TooltipStat.Handling: return el.GetModifiedHandlingForUsage(u);
+                case TooltipStat.Accuracy: return el.Item.GetWeaponWithUsageIndex(u).Accuracy;
+                case TooltipStat.MountSpeed: return el.GetModifiedMountSpeed(in EquipmentElement.Invalid);
+                case TooltipStat.MountManeuver: return el.GetModifiedMountManeuver(in EquipmentElement.Invalid);
+                default: return 0;
+            }
+        }
+
+        /// <summary>"99 Cut" -> "37 (99-62) Cut". False (row untouched) when the row's text does not hold the number.</summary>
+        private static bool Rewrite(ItemMenuTooltipPropertyVM row, int value, int after)
+        {
+            var text = TooltipStats.InsertBreakdown(row.ValueLabel, value, TooltipStats.Breakdown(after, value));
+            if (text == null) return false;
+            row.ValueLabel = text;
+            return true;
+        }
+
+        /// <summary>Vanilla's GetColorFromComparison; "equal" is the default (uncoloured) text colour.</summary>
+        private static Color ComparisonColor(int result, bool isCompared)
+        {
+            if (result == 0) return new Color(0f, 0f, 0f, 0f); // TooltipProperty's default = no colour
+            bool good = isCompared ? result < 0 : result > 0;
+            return good ? UIColors.PositiveIndicator : UIColors.NegativeIndicator;
+        }
+
+        // ---- requirement line ----
 
         /// <summary>Our requirement for this tooltip item, only when it asks something (R &gt; 0).</summary>
         private static ItemRequirement? Covered(ItemVM? itemVm)
@@ -161,26 +436,34 @@ namespace GearMastery.Patches
             return req.SkillFor(usage);
         }
 
-        /// <summary>Vanilla's look: "Requires: " (target side only) + "&lt;Skill&gt; &lt;R&gt;", green when met or no
-        /// character, red when short.</summary>
+        /// <summary>Vanilla's look: "Requires: " (target side only) + "&lt;Skill&gt; &lt;R&gt; (yours &lt;n&gt;)", green
+        /// when met or no character, red when short.</summary>
         private static ItemMenuTooltipPropertyVM RequirementLine(ItemRequirement req, SkillObject skill, BasicCharacterObject? character, bool isComparison)
         {
-            bool met = character == null
-                || !TooltipPenalties.IsShort(req.Value, ItemRequirements.GetSkill(character, skill));
             string definition = isComparison ? "" : RequiresText().ToString();
-            string value = skill.Name + " " + req.Value;
-            return new ItemMenuTooltipPropertyVM(definition, value, 0, met ? UIColors.PositiveIndicator : UIColors.NegativeIndicator);
+            if (character == null)
+                return new ItemMenuTooltipPropertyVM(definition, skill.Name + " " + req.Value, 0, UIColors.PositiveIndicator);
+            int yours = ItemRequirements.GetSkill(character, skill);
+            bool met = !TooltipPenalties.IsShort(req.Value, yours);
+            var text = new TextObject("{=gm_requires_yours}{SKILL} {VALUE} (yours {YOURS})");
+            text.SetTextVariable("SKILL", skill.Name);
+            text.SetTextVariable("VALUE", req.Value);
+            text.SetTextVariable("YOURS", yours);
+            return new ItemMenuTooltipPropertyVM(definition, text.ToString(), 0, met ? UIColors.PositiveIndicator : UIColors.NegativeIndicator);
         }
 
         private static ItemMenuTooltipPropertyVM Blank() => new ItemMenuTooltipPropertyVM("", "", 0);
 
-        /// <summary>"-12% damage, -8% swing speed, -12% handling", or null when not short / nothing rounds above 0%.</summary>
-        private static string? PenaltyText(ItemRequirement req, SkillObject skillObject, BasicCharacterObject? character)
+        // ---- compact penalty line ----
+
+        /// <summary>"+25% shield damage taken", or null when not short, not covered by the who-toggles, or nothing
+        /// rounds above 0%.</summary>
+        private static string? PenaltyText(ItemRequirement req, SkillObject skillObject, BasicCharacterObject? character, bool thrownUsage)
         {
-            if (character == null) return null;
+            if (character == null || !AgentGear.CharacterPays(character)) return null;
             int skill = ItemRequirements.GetSkill(character, skillObject);
             if (!TooltipPenalties.IsShort(req.Value, skill)) return null;
-            var parts = TooltipPenalties.For(req.Kind, Requirements.Shortfall(req.Value, skill), ItemRequirements.Settings);
+            var parts = TooltipPenalties.For(req.Kind, Requirements.Shortfall(req.Value, skill), ItemRequirements.Settings, thrownUsage);
             if (parts.Count == 0) return null;
             var texts = new List<string>(parts.Count);
             foreach (var part in parts)

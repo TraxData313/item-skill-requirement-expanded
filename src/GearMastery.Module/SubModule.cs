@@ -61,7 +61,8 @@ namespace GearMastery
             Patch("CharacterHelper.CanUseItem postfix (bows / crossbows / slings / horses equippable)", h => CanUseItemPatch.Apply(h));
             Patch("ItemMenuVM.RefreshItemTooltips prefix (usage tab -> per-usage requirement skill)", h => ItemTooltipPatch.ApplyUsageIndex(h));
             Patch("ItemMenuVM.AddSkillRequirement prefix (requirement line coloured by skill < R)", h => ItemTooltipPatch.ApplyRequirementLine(h));
-            Patch("ItemMenuVM.SetGeneralComponentTooltip postfix (requirement + penalty lines)", h => ItemTooltipPatch.ApplyGeneralTooltip(h));
+            Patch("ItemMenuVM.SetGeneralComponentTooltip postfix (requirement + shield / armour penalty lines)", h => ItemTooltipPatch.ApplyGeneralTooltip(h));
+            Patch("ItemMenuVM.RefreshItemTooltips postfix (stat rows after the penalty, compared by after values)", h => ItemTooltipPatch.ApplyStatRows(h));
         }
 
         /// <summary>The mission side (every game type, once per process): the Riding lock lifted for covered heroes.</summary>

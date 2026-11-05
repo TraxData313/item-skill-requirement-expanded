@@ -29,8 +29,12 @@ in game; no remote yet. Player docs: `README.md`.
   `ApplyToPlayer`, `ApplyToCompanions` (player clan heroes), `ApplyToOtherHeroes`, `ApplyInTournaments` (mission has
   SandBox's `TournamentBehavior`). Horse penalty and mount unlock follow the RIDER: MountDifficulty is zeroed only
   under a covered rider, and a prefix on `Agent.CheckSkillForMounting` lets covered heroes mount any horse.
-- Inventory tooltip: vanilla `ItemMenuVM.AddSkillRequirement` draws "Requires <skill> <n>" red/green; we add the same
-  line for our items plus a penalty line.
+- Inventory tooltip (round 2, step 9, `Patches\ItemTooltipPatch`): "Requires: <Skill> <R> (yours <n>)" red/green per
+  usage tab; when short (and the who-toggles cover the character) vanilla's stat rows show the after-penalty value
+  with the breakdown ("Swing Damage: 37 (99-62) Cut"), from Core `TooltipStats` (same functions as the models);
+  comparison colours compare after values. A compact "Unskilled:" line only for shield damage taken / armour foot speed.
+- Thrown usages (javelin thrown; kind Weapon + usage IsRangedWeapon) take the RANGED anchors in battle and tooltip:
+  damage + inaccuracy, no swing / ready / handling (`CombatPenalties.IsThrownUsage`).
 
 ## Layout
 

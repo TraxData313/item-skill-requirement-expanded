@@ -81,16 +81,30 @@ namespace GearMastery.Core
         }
 
         /// <summary>
+        /// Is this usage of a melee-family item a THROWN one (javelin / throwing axe / knife in its throwing mode)?
+        /// Kind Weapon and the usage carries the RangedWeapon flag. Thrown usages are judged by the ranged anchors
+        /// (damage + aim), not the melee swing / handling ones, which mean nothing for a throw (round 2, step 9).
+        /// </summary>
+        public static bool IsThrownUsage(SkillKind kind, bool usageIsRanged) => kind == SkillKind.Weapon && usageIsRanged;
+
+        /// <summary>
         /// The wielded item's multipliers by its kind:
-        /// - Weapon (melee / throwing): damage, swing speed, thrust (and throw-ready) speed = the swing multiplier, handling.
+        /// - Weapon, melee usage: damage, swing speed, thrust speed = the swing multiplier, handling.
+        /// - Weapon, THROWN usage (<paramref name="thrownUsage"/>): ranged damage and ranged inaccuracy only (no reload,
+        ///   no ready / swing / handling penalty).
         /// - Ranged (bow / crossbow / sling): damage, reload, draw (ThrustOrRangedReady) = the reload multiplier, inaccuracy.
         /// - Shield / Armour / Mount: nothing here (they have their own hooks).
         /// </summary>
-        public static WieldedMultipliers ForWielded(SkillKind kind, float shortfall, GearMasterySettings settings)
+        public static WieldedMultipliers ForWielded(SkillKind kind, float shortfall, GearMasterySettings settings, bool thrownUsage = false)
         {
             if (settings == null || !(shortfall > 0f)) return WieldedMultipliers.Identity;
             switch (kind)
             {
+                case SkillKind.Weapon when thrownUsage:
+                    return new WieldedMultipliers(
+                        Penalties.RangedDamageMultiplier(shortfall, settings),
+                        1f, 1f, 1f, 1f,
+                        Penalties.InaccuracyMultiplier(shortfall, settings));
                 case SkillKind.Weapon:
                 {
                     float swing = Penalties.SwingSpeedMultiplier(shortfall, settings);
@@ -119,14 +133,26 @@ namespace GearMastery.Core
         }
 
         /// <summary>
-        /// The damage multiplier for a blow: a melee / thrown weapon's own requirement (kind Weapon), or - for a missile
-        /// that is AMMO (arrow, bolt, sling stone) - the requirement of the launcher in hand (kind Ranged). Anything else 1.
+        /// The damage multiplier for a blow: a melee weapon's own requirement (kind Weapon, melee anchors); a THROWN
+        /// usage of a Weapon-kind item (javelin thrown) its own requirement with the RANGED damage anchors; a missile
+        /// that is AMMO (arrow, bolt, sling stone) the requirement of the launcher in hand (kind Ranged). Anything else 1.
         /// </summary>
-        public static float DamageMultiplier(SkillKind kind, bool blowIsAmmo, float shortfall, GearMasterySettings settings)
+        public static float DamageMultiplier(SkillKind kind, bool blowIsAmmo, float shortfall, GearMasterySettings settings, bool thrownUsage = false)
         {
             if (settings == null || !(shortfall > 0f)) return 1f;
             if (blowIsAmmo) return kind == SkillKind.Ranged ? Penalties.RangedDamageMultiplier(shortfall, settings) : 1f;
-            return kind == SkillKind.Weapon ? Penalties.WeaponDamageMultiplier(shortfall, settings) : 1f;
+            if (kind != SkillKind.Weapon) return 1f;
+            return thrownUsage ? Penalties.RangedDamageMultiplier(shortfall, settings) : Penalties.WeaponDamageMultiplier(shortfall, settings);
+        }
+
+        /// <summary>The inaccuracy multiplier for a ranged usage: launchers (kind Ranged) and thrown usages of
+        /// Weapon-kind items; 1 for everything else.</summary>
+        public static float InaccuracyMultiplier(SkillKind kind, bool thrownUsage, float shortfall, GearMasterySettings settings)
+        {
+            if (settings == null || !(shortfall > 0f)) return 1f;
+            return kind == SkillKind.Ranged || IsThrownUsage(kind, thrownUsage)
+                ? Penalties.InaccuracyMultiplier(shortfall, settings)
+                : 1f;
         }
 
         /// <summary>
