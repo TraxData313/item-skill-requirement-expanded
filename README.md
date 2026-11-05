@@ -12,6 +12,16 @@ Troops are never touched. They fight exactly as in vanilla.
 
 ![One Handed 77: the Tier 3 axe he has mastered (green) next to a Tier 4 axe that asks 95 (red, after-penalty numbers)](docs/screenshots/02-axe-tier-above-penalised.jpg)
 
+## Install
+
+1. Get it from [Nexus Mods](https://www.nexusmods.com/mountandblade2bannerlord/mods/14526),
+   subscribe on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3834307298),
+   or download the zip from the [GitHub Releases page](https://github.com/TraxData313/item-skill-requirement-expanded/releases/latest).
+2. Extract it into `Mount & Blade II Bannerlord\Modules\`.
+3. Enable it in the launcher, below Harmony (and MCM if you use it). Requires
+   [Harmony](https://www.nexusmods.com/mountandblade2bannerlord/mods/2006);
+   [Mod Configuration Menu](https://www.nexusmods.com/mountandblade2bannerlord/mods/612) is optional.
+
 ## Screenshots
 
 | | |

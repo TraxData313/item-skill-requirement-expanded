@@ -1,10 +1,9 @@
 <Tasks>
     <GetItem>
-        <!-- Updating the existing Workshop item ITEM_ID (to be created by WorkshopCreate.xml - replace ITEM_ID here
-             and below with the new item's number after the first upload; make_workshop_update.py refuses until then).
+        <!-- Updating the existing Workshop item 3834307298 (created 2026-11-05 by WorkshopCreate.xml).
              Not run directly: tools\make_workshop_update.py builds a task from it (adds ModuleFolder,
              the description, change notes, visibility). See tools\WORKSHOP-UPLOAD.md. -->
-        <ItemId Value="ITEM_ID"/>
+        <ItemId Value="3834307298"/>
     </GetItem>
     <UpdateItem>
         <ModuleFolder Value="DIST_FOLDER"/>
