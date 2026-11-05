@@ -114,8 +114,16 @@ namespace GearMastery
         /// (a requirement change also calls <see cref="Reset"/>); without MCM it keeps the defaults. Never replaced.</summary>
         public static GearMasterySettings Settings { get; } = new GearMasterySettings();
 
-        /// <summary>Forget everything (new game / game end: models and items may differ).</summary>
-        public static void Reset() => Cache.Clear();
+        // Bumped by every Reset: a Get that computed with the OLD table while an MCM change reset the cache does not
+        // write its stale result back (the next query computes afresh).
+        private static int _generation;
+
+        /// <summary>Forget everything (new game / game end, or a requirement setting changed in MCM).</summary>
+        public static void Reset()
+        {
+            System.Threading.Interlocked.Increment(ref _generation);
+            Cache.Clear();
+        }
 
         /// <summary>
         /// The item's requirement, or null when the item is not covered (ammo, banners, goods, pack animals, firearms)
@@ -126,6 +134,7 @@ namespace GearMastery
             if (item == null) return null;
             if (Cache.TryGetValue(item, out var cached)) return cached;
             if (Game.Current?.BasicModels?.ItemValueModel == null) return null; // Tierf needs a running game; don't cache
+            int generation = System.Threading.Volatile.Read(ref _generation);
             ItemRequirement? result;
             try
             {
@@ -136,7 +145,7 @@ namespace GearMastery
                 ModLog.ErrorOnce("ItemRequirements.Get", e);
                 result = null;
             }
-            Cache[item] = result;
+            if (System.Threading.Volatile.Read(ref _generation) == generation) Cache[item] = result;
             return result;
         }
 
