@@ -2,7 +2,7 @@
 
 Bannerlord 1.4.8 (+ War Sails) mod: **soft skill requirements** on melee weapons, shields and armour. You CAN equip
 anything; if your skill is below the item's requirement, the requirement shows in red and you fight with scaled
-penalties. Bows, crossbows and horses become soft too (R = vanilla difficulty).
+penalties. Bows, crossbows and horses become soft too. Heroes only; troops fight as in vanilla.
 
 Status and the agreed design: `.manager\progress.md` (the resume file, committed). All 5 steps are done (scaffold,
 requirements core, combat penalties, inventory unlock + tooltip, review + settings file + docs). Not yet playtested
@@ -16,17 +16,19 @@ in game; no remote yet. Player docs: `README.md`.
   "Tier N" = round(Tierf) clamped 0..6, so "Tier 6" = Tierf >= 5.5.
 - Skill: weapons per USAGE (`ItemRequirement.SkillFor(usage)`: bastard sword 1H/2H, javelin Throwing/held skill);
   shields and armour = Athletics; bows Bow, crossbows Crossbow, slings Throwing, horses Riding.
-- `shortfall = clamp((R - skill) / R, 0, 1)`; penalty = max x shortfall^0.5 (`PenaltyExponent`). Penalties are MILD
-  on purpose (an expensive sword unskilled ~ a standard sword); maxima are settings in `GearMasterySettings`:
-  - weapons: damage -15%, swing speed -10%, handling -15%;
-  - shields: the shield takes up to +25% damage;
-  - armour: foot max speed -8%, weighted by the weight share of the under-skilled pieces;
-  - bows/crossbows: damage -15%, reload -10%, inaccuracy +30%; horses: speed and maneuver -10%.
-  All tunable in settings.json without recompiling.
+- Penalty curve (round 2, step 7) with a SNAP: skill >= R -> 0. Below, by r = skill / R (= 1 - shortfall),
+  piecewise-linear through anchors r->1: Low, r 0.6: Mid, r 0.3: High, held at High below (`Penalties.Amount`;
+  ratios `PenaltyMidRatio` / `PenaltyHighRatio`). One Low/Mid/High triple per stat in `GearMasterySettings`:
+  melee damage 25/50/75%, swing + handling 12.5/25/37.5%; shield damage taken +25/50/75%; armour foot speed
+  20/40/60% per piece by its own r, then weighted by the piece's share of total worn weight; ranged damage 25/50/75%,
+  reload/draw 12.5/25/37.5%, inaccuracy +25/50/75%; horse speed and maneuver 25/50/75%. Goal (Toni): an item a tier
+  or two above your skill comes out WORSE than the one you meet (unit-tested for horses and swords).
 - Requirement table: `ItemRequirements` (module), lazy per game. Dev install writes
   `Configs\GearMastery\item_requirements.csv` at game start.
-- Applies to every agent (setting: heroes only). The mount unlock (horse `MountDifficulty` zeroed, CanAgentRideMount)
-  applies to everyone regardless.
+- Who pays (`AgentGear.Pays`): never troops (non-hero agents keep vanilla, mount lock included). Toggles
+  `ApplyToPlayer`, `ApplyToCompanions` (player clan heroes), `ApplyToOtherHeroes`, `ApplyInTournaments` (mission has
+  SandBox's `TournamentBehavior`). Horse penalty and mount unlock follow the RIDER: MountDifficulty is zeroed only
+  under a covered rider, and a prefix on `Agent.CheckSkillForMounting` lets covered heroes mount any horse.
 - Inventory tooltip: vanilla `ItemMenuVM.AddSkillRequirement` draws "Requires <skill> <n>" red/green; we add the same
   line for our items plus a penalty line.
 
@@ -38,7 +40,7 @@ in game; no remote yet. Player docs: `README.md`.
   `ModLog`, `SettingsLoader` (reads settings.json at every game start), `ItemRequirements` (the table),
   `AgentGear` (item of a blow, shortfall from the model's effective skill - deliberately NOT cached per agent:
   captains / Phalanx / level-ups move it mid-battle), `MountRefreshLogic` (refreshes a horse when mounted);
-  `Models\` the decorator models; `Patches\` the Harmony patches (inventory only: `CanUseItemPatch`, `ItemTooltipPatch`), applied once at the first campaign start. Depends on `Bannerlord.Harmony` (not shipped).
+  `Models\` the decorator models; `Patches\` the Harmony patches (`MountSkillPatch` once at the first game start of any type; inventory `CanUseItemPatch`, `ItemTooltipPatch` once at the first campaign start). Depends on `Bannerlord.Harmony` (not shipped).
 - `tests\GearMastery.Core.Tests` - xunit, net8.0.
 - `module\` - SubModule.xml. Build output lands in `module\bin` (git-ignored).
 - Machine paths: `Directory.Build.props.user` (git-ignored) sets `GameFolder` and `HarmonyBinFolder` (falls back to

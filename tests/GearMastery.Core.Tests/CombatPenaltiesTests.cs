@@ -5,17 +5,51 @@ namespace GearMastery.Core.Tests;
 public class CombatPenaltiesTests
 {
     private static readonly GearMasterySettings Defaults = new();
-    private static readonly GearMasterySettings Linear = new() { PenaltyExponent = 1f };
 
     [Fact]
-    public void HeroesOnlySparesTroops()
+    public void TroopsNeverPay()
     {
-        Assert.True(CombatPenalties.AppliesTo(false, Defaults));
-        Assert.True(CombatPenalties.AppliesTo(true, Defaults));
-        var heroes = new GearMasterySettings { HeroesOnly = true };
-        Assert.False(CombatPenalties.AppliesTo(false, heroes));
-        Assert.True(CombatPenalties.AppliesTo(true, heroes));
-        Assert.False(CombatPenalties.AppliesTo(true, null!));
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.Troop, false, Defaults));
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.Troop, true, Defaults));
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.Player, false, null!));
+    }
+
+    [Theory]
+    [InlineData(PenaltyTarget.Player)]
+    [InlineData(PenaltyTarget.Companion)]
+    [InlineData(PenaltyTarget.OtherHero)]
+    public void HeroesPayByDefaultIncludingTournaments(PenaltyTarget who)
+    {
+        Assert.True(CombatPenalties.AppliesTo(who, false, Defaults));
+        Assert.True(CombatPenalties.AppliesTo(who, true, Defaults));
+    }
+
+    [Fact]
+    public void EachToggleSparesOnlyItsOwnGroup()
+    {
+        var noPlayer = new GearMasterySettings { ApplyToPlayer = false };
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.Player, false, noPlayer));
+        Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.Companion, false, noPlayer));
+        Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.OtherHero, false, noPlayer));
+
+        var noCompanions = new GearMasterySettings { ApplyToCompanions = false };
+        Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.Player, false, noCompanions));
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.Companion, false, noCompanions));
+        Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.OtherHero, false, noCompanions));
+
+        var noLords = new GearMasterySettings { ApplyToOtherHeroes = false };
+        Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.Player, false, noLords));
+        Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.Companion, false, noLords));
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.OtherHero, false, noLords));
+    }
+
+    [Fact]
+    public void TournamentToggleSparesEveryoneInATournamentOnly()
+    {
+        var s = new GearMasterySettings { ApplyInTournaments = false };
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.Player, true, s));
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.OtherHero, true, s));
+        Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.Player, false, s));
     }
 
     [Theory]
@@ -35,10 +69,10 @@ public class CombatPenaltiesTests
     public void MeleeWeaponAtFullShortfall()
     {
         var m = CombatPenalties.ForWielded(SkillKind.Weapon, 1f, Defaults);
-        Assert.Equal(0.85f, m.Damage, 4);
-        Assert.Equal(0.90f, m.Swing, 4);
-        Assert.Equal(0.90f, m.ThrustOrRangedReady, 4);
-        Assert.Equal(0.85f, m.Handling, 4);
+        Assert.Equal(0.25f, m.Damage, 4);
+        Assert.Equal(0.625f, m.Swing, 4);
+        Assert.Equal(0.625f, m.ThrustOrRangedReady, 4);
+        Assert.Equal(0.625f, m.Handling, 4);
         Assert.Equal(1f, m.Reload);
         Assert.Equal(1f, m.Inaccuracy);
     }
@@ -47,12 +81,12 @@ public class CombatPenaltiesTests
     public void RangedAtFullShortfall()
     {
         var m = CombatPenalties.ForWielded(SkillKind.Ranged, 1f, Defaults);
-        Assert.Equal(0.85f, m.Damage, 4);
+        Assert.Equal(0.25f, m.Damage, 4);
         Assert.Equal(1f, m.Swing);
         Assert.Equal(1f, m.Handling);
-        Assert.Equal(0.90f, m.Reload, 4);
-        Assert.Equal(0.90f, m.ThrustOrRangedReady, 4);
-        Assert.Equal(1.30f, m.Inaccuracy, 4);
+        Assert.Equal(0.625f, m.Reload, 4);
+        Assert.Equal(0.625f, m.ThrustOrRangedReady, 4);
+        Assert.Equal(1.75f, m.Inaccuracy, 4);
     }
 
     [Fact]
@@ -66,21 +100,20 @@ public class CombatPenaltiesTests
     [Fact]
     public void PartialShortfallFollowsTheCurve()
     {
-        // p = 0.5: shortfall 0.25 -> curve 0.5 -> half the maximum.
-        var m = CombatPenalties.ForWielded(SkillKind.Weapon, 0.25f, Defaults);
-        Assert.Equal(1f - 0.15f * 0.5f, m.Damage, 4);
-        Assert.Equal(1f - 0.10f * 0.5f, m.Swing, 4);
-        var lin = CombatPenalties.ForWielded(SkillKind.Weapon, 0.25f, Linear);
-        Assert.Equal(1f - 0.15f * 0.25f, lin.Damage, 4);
+        // shortfall 0.4 = r 0.6: the Mid anchors.
+        var m = CombatPenalties.ForWielded(SkillKind.Weapon, 0.4f, Defaults);
+        Assert.Equal(0.5f, m.Damage, 4);
+        Assert.Equal(0.75f, m.Swing, 4);
+        Assert.Equal(0.75f, m.Handling, 4);
     }
 
     [Fact]
     public void DamageMultiplierPicksTheRightFamily()
     {
         // A sword blow: weapon penalty.
-        Assert.Equal(0.85f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, 1f, Defaults), 4);
+        Assert.Equal(0.25f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, 1f, Defaults), 4);
         // An arrow from an under-skilled bow: ranged penalty.
-        Assert.Equal(0.85f, CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, 1f, Defaults), 4);
+        Assert.Equal(0.25f, CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, 1f, Defaults), 4);
         // An arrow whose shooter now holds a sword: nothing.
         Assert.Equal(1f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, true, 1f, Defaults));
         // A bow / shield used as the "weapon" of a non-ammo blow: nothing.
@@ -88,7 +121,7 @@ public class CombatPenaltiesTests
         Assert.Equal(1f, CombatPenalties.DamageMultiplier(SkillKind.Shield, false, 1f, Defaults));
         Assert.Equal(1f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, 0f, Defaults));
 
-        var tough = new GearMasterySettings { MaxRangedDamagePenalty = 0.4f };
+        var tough = new GearMasterySettings { RangedDamagePenaltyHigh = 0.4f };
         Assert.Equal(0.6f, CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, 1f, tough), 4);
     }
 

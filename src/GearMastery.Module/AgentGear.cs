@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using GearMastery.Core;
+using SandBox.Tournaments.MissionLogics;
+using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.ObjectSystem;
@@ -28,12 +31,89 @@ namespace GearMastery
             lock (MapGate) _weaponToItem = null;
         }
 
-        /// <summary>A human agent with a character that pays penalties under the current settings.</summary>
+        /// <summary>
+        /// A human HERO agent the who-filter covers (player / companions / other heroes toggles, tournaments toggle).
+        /// Troops never pay: they keep vanilla behaviour, mount lock included. Cheap: a few property reads plus a
+        /// per-mission cached tournament flag.
+        /// </summary>
         public static bool Pays(Agent? agent)
         {
-            if (agent == null || !agent.IsHuman || agent.Character == null) return false;
-            return CombatPenalties.AppliesTo(agent.IsHero, ItemRequirements.Settings);
+            if (agent == null || !agent.IsHuman || agent.Character == null || !agent.IsHero) return false;
+            return CombatPenalties.AppliesTo(Who(agent), InTournament(agent.Mission), ItemRequirements.Settings);
         }
+
+        /// <summary>Who the agent is for the filter. Campaign: by its Hero (main hero / player clan / other);
+        /// elsewhere (custom battle): the player's troop or the main agent is the player, any other hero "other".</summary>
+        public static PenaltyTarget Who(Agent agent)
+        {
+            if (!agent.IsHero) return PenaltyTarget.Troop;
+            var character = agent.Character;
+            if (Campaign.Current != null && character is CharacterObject co)
+            {
+                var hero = co.HeroObject;
+                if (hero != null)
+                {
+                    if (hero == Hero.MainHero) return PenaltyTarget.Player;
+                    var clan = hero.Clan;
+                    return clan != null && clan == Clan.PlayerClan ? PenaltyTarget.Companion : PenaltyTarget.OtherHero;
+                }
+            }
+            if (agent.IsMainAgent || (character != null && ReferenceEquals(character, Game.Current?.PlayerTroop)))
+                return PenaltyTarget.Player;
+            return PenaltyTarget.OtherHero;
+        }
+
+        // ---- tournament flag, cached per mission (one immutable pair, swapped atomically: blows may run off-thread)
+
+        private sealed class TournamentFlag
+        {
+            public TournamentFlag(Mission mission, bool value)
+            {
+                Mission = mission;
+                Value = value;
+            }
+
+            public Mission Mission { get; }
+            public bool Value { get; }
+        }
+
+        private static TournamentFlag? _tournament;
+
+        /// <summary>Is this mission a campaign tournament fight (SandBox's TournamentBehavior present)?</summary>
+        public static bool InTournament(Mission? mission)
+        {
+            if (mission == null) return false;
+            var cached = _tournament;
+            if (cached != null && ReferenceEquals(cached.Mission, mission)) return cached.Value;
+            bool value = DetectTournament(mission);
+            _tournament = new TournamentFlag(mission, value);
+            return value;
+        }
+
+        /// <summary>Mission over: drop the cached reference (so the old Mission can be collected).</summary>
+        public static void ForgetMission(Mission? mission)
+        {
+            var cached = _tournament;
+            if (cached != null && (mission == null || ReferenceEquals(cached.Mission, mission))) _tournament = null;
+        }
+
+        private static bool DetectTournament(Mission mission)
+        {
+            try
+            {
+                return Campaign.Current != null && HasTournamentBehavior(mission);
+            }
+            catch (Exception e)
+            {
+                ModLog.ErrorOnce("gear.tournament", e);
+                return false;
+            }
+        }
+
+        // Own method: SandBox.dll is JIT-resolved only here, inside the caller's try/catch.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool HasTournamentBehavior(Mission mission) =>
+            mission.GetMissionBehavior<TournamentBehavior>() != null;
 
         /// <summary>
         /// The agent's shortfall on the item (0 when not covered / met), using the model's effective skill
@@ -50,7 +130,7 @@ namespace GearMastery
             return Requirements.Shortfall(requirement.Value, model.GetEffectiveSkill(agent, skill));
         }
 
-        /// <summary>The foot max-speed multiplier from all worn armour (weight-weighted shortfall).</summary>
+        /// <summary>The foot max-speed multiplier from all worn armour (each piece by its own ratio, shared by weight).</summary>
         public static float ArmourSpeed(AgentStatCalculateModel model, Agent agent)
         {
             var equipment = agent.SpawnEquipment;

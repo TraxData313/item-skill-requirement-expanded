@@ -46,18 +46,18 @@ namespace GearMastery.Core.Tests
         {
             var parts = TooltipPenalties.For(SkillKind.Weapon, 1f, Defaults);
             Assert.Equal(new[] { PenaltyStat.Damage, PenaltyStat.SwingSpeed, PenaltyStat.Handling }, parts.Select(p => p.Stat));
-            Assert.Equal(new[] { -15, -10, -15 }, parts.Select(p => p.Percent));
+            Assert.Equal(new[] { -75, -38, -38 }, parts.Select(p => p.Percent));
         }
 
         [Fact]
         public void Weapon_parts_match_the_battle_multipliers()
         {
-            // skill 30 on R 90: shortfall 2/3, curve sqrt = 0.8165
+            // skill 30 on R 90: r 1/3 -> damage 50 + 25 x 0.267 / 0.3 = 72.2%, swing 36.1%
             float s = Requirements.Shortfall(90, 30);
             var parts = TooltipPenalties.For(SkillKind.Weapon, s, Defaults);
             Assert.Equal(TooltipPenalties.Percent(Penalties.WeaponDamageMultiplier(s, Defaults)), parts[0].Percent);
-            Assert.Equal(-12, parts[0].Percent); // 15 x 0.8165 = 12.2
-            Assert.Equal(-8, parts[1].Percent);  // 10 x 0.8165 = 8.2
+            Assert.Equal(-72, parts[0].Percent);
+            Assert.Equal(-36, parts[1].Percent);
         }
 
         [Fact]
@@ -65,12 +65,12 @@ namespace GearMastery.Core.Tests
         {
             var shield = TooltipPenalties.For(SkillKind.Shield, 1f, Defaults).Single();
             Assert.Equal(PenaltyStat.ShieldDamageTaken, shield.Stat);
-            Assert.Equal(25, shield.Percent);
-            Assert.Equal("+25", shield.SignedPercent);
+            Assert.Equal(75, shield.Percent);
+            Assert.Equal("+75", shield.SignedPercent);
 
             var ranged = TooltipPenalties.For(SkillKind.Ranged, 1f, Defaults);
             Assert.Equal(new[] { PenaltyStat.Damage, PenaltyStat.ReloadSpeed, PenaltyStat.Inaccuracy }, ranged.Select(p => p.Stat));
-            Assert.Equal(new[] { -15, -10, 30 }, ranged.Select(p => p.Percent));
+            Assert.Equal(new[] { -75, -38, 75 }, ranged.Select(p => p.Percent));
         }
 
         [Fact]
@@ -78,7 +78,7 @@ namespace GearMastery.Core.Tests
         {
             var part = TooltipPenalties.For(SkillKind.Armour, 1f, Defaults).Single();
             Assert.Equal(PenaltyStat.FootSpeedUpTo, part.Stat);
-            Assert.Equal(-8, part.Percent);
+            Assert.Equal(-60, part.Percent);
         }
 
         [Fact]
@@ -86,15 +86,23 @@ namespace GearMastery.Core.Tests
         {
             var parts = TooltipPenalties.For(SkillKind.Mount, 1f, Defaults);
             Assert.Equal(new[] { PenaltyStat.HorseSpeed, PenaltyStat.HorseManeuver }, parts.Select(p => p.Stat));
-            Assert.Equal(new[] { -10, -10 }, parts.Select(p => p.Percent));
+            Assert.Equal(new[] { -75, -75 }, parts.Select(p => p.Percent));
         }
 
         [Fact]
-        public void Tiny_shortfall_parts_that_round_to_zero_are_dropped()
+        public void Tiny_shortfall_already_pays_the_low_anchor()
         {
-            // shortfall 0.001: curve 0.0316 -> damage -0.47% -> 0, dropped
+            // The snap: one hair short is already -25% damage, -12.5% swing / handling.
             var parts = TooltipPenalties.For(SkillKind.Weapon, 0.001f, Defaults);
-            Assert.Empty(parts);
+            Assert.Equal(new[] { -25, -13, -13 }, parts.Select(p => p.Percent));
+        }
+
+        [Fact]
+        public void Parts_that_round_to_zero_are_dropped()
+        {
+            var s = new GearMasterySettings { MeleeHandlingPenaltyLow = 0.001f, MeleeHandlingPenaltyMid = 0.001f };
+            var parts = TooltipPenalties.For(SkillKind.Weapon, 0.001f, s);
+            Assert.Equal(new[] { PenaltyStat.Damage, PenaltyStat.SwingSpeed }, parts.Select(p => p.Stat));
         }
     }
 }

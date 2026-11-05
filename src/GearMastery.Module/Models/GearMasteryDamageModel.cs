@@ -10,7 +10,7 @@ namespace GearMastery.Models
     /// The damage DECORATOR over whatever AgentApplyDamageModel was registered before (Sandbox / CustomBattle /
     /// War Sails' naval / trax's). Every member forwards to BaseModel (trax's TraxDamageModel pattern); the one
     /// addition is <see cref="CalculateShieldDamage"/>: the DEFENDER's shield takes more damage when he is under its
-    /// One Handed requirement. Weapon damage itself lives in the stat model's GetWeaponDamageMultiplier.
+    /// Athletics requirement (who-filter: covered heroes only). Weapon damage itself lives in the stat model's GetWeaponDamageMultiplier.
     /// </summary>
     public sealed class GearMasteryDamageModel : AgentApplyDamageModel
     {

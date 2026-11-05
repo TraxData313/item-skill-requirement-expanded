@@ -24,70 +24,70 @@ public class SettingsFileTests
         Assert.Contains("// ", text);
         foreach (var def in SettingsFile.All)
             Assert.Contains("\"" + def.Key + "\":", text);
-        Assert.Contains("\"MaxWeaponDamagePenalty\": 0.15", text);
-        Assert.Contains("\"HeroesOnly\": false", text);
+        Assert.Contains("\"MeleeDamagePenaltyHigh\": 0.75", text);
+        Assert.Contains("\"ApplyToCompanions\": true", text);
         Assert.Contains("\"RequirementAtTier6\": 150", text);
     }
 
     [Fact]
     public void CustomValuesRoundTrip()
     {
-        var s = new GearMasterySettings { MaxWeaponDamagePenalty = 0.3f, HeroesOnly = true, RequirementAtTopTier = 180, TopTier = 8f, PenaltyExponent = 1f };
+        var s = new GearMasterySettings { MeleeDamagePenaltyHigh = 0.3f, ApplyToCompanions = false, RequirementAtTopTier = 180, TopTier = 8f, PenaltyMidRatio = 0.7f };
         var r = SettingsFile.Read(SettingsFile.Write(s));
         Assert.Empty(r.Issues);
-        Assert.Equal(0.3f, r.Settings.MaxWeaponDamagePenalty, 5);
-        Assert.True(r.Settings.HeroesOnly);
+        Assert.Equal(0.3f, r.Settings.MeleeDamagePenaltyHigh, 5);
+        Assert.False(r.Settings.ApplyToCompanions);
         Assert.Equal(180, r.Settings.RequirementAtTopTier);
         Assert.Equal(8f, r.Settings.TopTier, 5);
-        Assert.Equal(1f, r.Settings.PenaltyExponent, 5);
+        Assert.Equal(0.7f, r.Settings.PenaltyMidRatio, 5);
     }
 
     [Fact]
     public void ToleratesCommentsTrailingCommasAndKeyCase()
     {
-        var r = SettingsFile.Read("// hi\n{ /* block */ \"maxswingspeedpenalty\": 0.2, // line\n \"heroesonly\": true, }\n");
+        var r = SettingsFile.Read("// hi\n{ /* block */ \"meleeswingspeedpenaltylow\": 0.2, // line\n \"applytocompanions\": false, }\n");
         Assert.Null(r.Error);
         Assert.Empty(r.Issues);
-        Assert.Equal(0.2f, r.Settings.MaxSwingSpeedPenalty, 5);
-        Assert.True(r.Settings.HeroesOnly);
+        Assert.Equal(0.2f, r.Settings.MeleeSwingSpeedPenaltyLow, 5);
+        Assert.False(r.Settings.ApplyToCompanions);
         Assert.Equal(2, r.FromFile);
-        Assert.Contains("MaxWeaponDamagePenalty", r.Missing);
+        Assert.Contains("MeleeDamagePenaltyHigh", r.Missing);
     }
 
     [Theory]
-    [InlineData("{\"MaxWeaponDamagePenalty\": 1.5}")]   // above the 0.9 cap
-    [InlineData("{\"MaxWeaponDamagePenalty\": -0.1}")]  // negative
-    [InlineData("{\"MaxWeaponDamagePenalty\": \"0.2\"}")] // a string
-    [InlineData("{\"MaxWeaponDamagePenalty\": null}")]
-    [InlineData("{\"MaxWeaponDamagePenalty\": [0.2]}")]
-    [InlineData("{\"MaxWeaponDamagePenalty\": true}")]
+    [InlineData("{\"MeleeDamagePenaltyHigh\": 1.5}")]   // above the 0.9 cap
+    [InlineData("{\"MeleeDamagePenaltyHigh\": -0.1}")]  // negative
+    [InlineData("{\"MeleeDamagePenaltyHigh\": \"0.2\"}")] // a string
+    [InlineData("{\"MeleeDamagePenaltyHigh\": null}")]
+    [InlineData("{\"MeleeDamagePenaltyHigh\": [0.2]}")]
+    [InlineData("{\"MeleeDamagePenaltyHigh\": true}")]
     public void InvalidValueFallsBackToDefaultWithAnIssue(string text)
     {
         var r = SettingsFile.Read(text);
         Assert.Null(r.Error);
         Assert.Single(r.Issues);
-        Assert.Contains("MaxWeaponDamagePenalty", r.Issues[0]);
-        Assert.Equal(0.15f, r.Settings.MaxWeaponDamagePenalty, 5);
+        Assert.Contains("MeleeDamagePenaltyHigh", r.Issues[0]);
+        Assert.Equal(0.75f, r.Settings.MeleeDamagePenaltyHigh, 5);
         Assert.Equal(0, r.FromFile);
     }
 
     [Fact]
     public void WholeNumberAndBoolAreChecked()
     {
-        var r = SettingsFile.Read("{\"RequirementAtTier6\": 50.5, \"HeroesOnly\": 1, \"RequirementAtTier5\": 80}");
+        var r = SettingsFile.Read("{\"RequirementAtTier6\": 50.5, \"ApplyToCompanions\": 0, \"RequirementAtTier5\": 80}");
         Assert.Equal(2, r.Issues.Count);
         Assert.Equal(150, r.Settings.RequirementAtTier6);
-        Assert.False(r.Settings.HeroesOnly);
+        Assert.True(r.Settings.ApplyToCompanions);
         Assert.Equal(80, r.Settings.RequirementAtTier5);
     }
 
     [Fact]
     public void UnknownKeyIsReportedAndIgnored()
     {
-        var r = SettingsFile.Read("{\"MaxWeaponDamagePenatly\": 0.5}");
+        var r = SettingsFile.Read("{\"MeleeDamagePenaltyHgih\": 0.5}");
         Assert.Single(r.Issues);
         Assert.Contains("not a setting", r.Issues[0]);
-        Assert.Equal(0.15f, r.Settings.MaxWeaponDamagePenalty, 5);
+        Assert.Equal(0.75f, r.Settings.MeleeDamagePenaltyHigh, 5);
     }
 
     [Fact]

@@ -16,6 +16,7 @@ namespace GearMastery
         internal const string HarmonyId = "trax.bannerlord.gearmastery";
 
         private static bool _patched;
+        private static bool _missionPatched;
 
         protected override void OnSubModuleLoad()
         {
@@ -33,6 +34,7 @@ namespace GearMastery
             {
                 ModLog.Info("load", "game start: " + (game?.GameType?.GetType().Name ?? "unknown game type"));
                 RegisterModels(gameStarterObject);
+                ApplyMissionPatches();
                 if (game?.GameType is Campaign) ApplyInventoryPatches();
             }
             catch (Exception e)
@@ -53,6 +55,14 @@ namespace GearMastery
             Patch("ItemMenuVM.RefreshItemTooltips prefix (usage tab -> per-usage requirement skill)", h => ItemTooltipPatch.ApplyUsageIndex(h));
             Patch("ItemMenuVM.AddSkillRequirement prefix (requirement line coloured by skill < R)", h => ItemTooltipPatch.ApplyRequirementLine(h));
             Patch("ItemMenuVM.SetGeneralComponentTooltip postfix (requirement + penalty lines)", h => ItemTooltipPatch.ApplyGeneralTooltip(h));
+        }
+
+        /// <summary>The mission side (every game type, once per process): the Riding lock lifted for covered heroes.</summary>
+        private static void ApplyMissionPatches()
+        {
+            if (_missionPatched) return;
+            _missionPatched = true;
+            Patch("Agent.CheckSkillForMounting prefix (covered heroes may mount any horse; troops keep vanilla)", h => MountSkillPatch.Apply(h));
         }
 
         private static void Patch(string what, Action<Harmony> apply)
@@ -85,7 +95,7 @@ namespace GearMastery
                     var stats = new GearMasteryStatModel(statModels);
                     starter.AddModel<AgentStatCalculateModel>(stats);
                     ModLog.Info("models", "agent stat decorator registered over " + stats.BaseModelName
-                        + " - weapon damage / swing / handling / reload / inaccuracy, armour foot speed, horse speed / maneuver, mount lock lifted; tournament AI-level fix "
+                        + " - weapon damage / swing / handling / reload / inaccuracy, armour foot speed, horse speed / maneuver, mount lock lifted (covered heroes only); tournament AI-level fix "
                         + (GearMasteryStatModel.AiLevelFixAvailable ? "active over " + statModels.Count + " base model(s)" : "UNAVAILABLE (field not found)"));
                 }
                 else

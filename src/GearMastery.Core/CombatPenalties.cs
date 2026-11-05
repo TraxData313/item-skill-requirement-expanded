@@ -1,5 +1,21 @@
 namespace GearMastery.Core
 {
+    /// <summary>Who an agent is, for the who-filter (<see cref="CombatPenalties.AppliesTo"/>).</summary>
+    public enum PenaltyTarget
+    {
+        /// <summary>A non-hero agent: never penalised.</summary>
+        Troop,
+
+        /// <summary>The player's own hero (campaign) or the player's character (custom battle).</summary>
+        Player,
+
+        /// <summary>A hero of the player's clan other than the player.</summary>
+        Companion,
+
+        /// <summary>Any other hero: lords, ladies, wanderers, friendly and enemy.</summary>
+        OtherHero,
+    }
+
     /// <summary>
     /// The multipliers the stat decorator applies for the item an agent WIELDS (main hand), on top of the base
     /// model's values. All 1 for an item that is not a weapon / launcher or has no shortfall.
@@ -46,9 +62,23 @@ namespace GearMastery.Core
     /// </summary>
     public static class CombatPenalties
     {
-        /// <summary>Does this agent pay penalties at all? <see cref="GearMasterySettings.HeroesOnly"/> spares troops.</summary>
-        public static bool AppliesTo(bool isHero, GearMasterySettings settings) =>
-            settings != null && (!settings.HeroesOnly || isHero);
+        /// <summary>
+        /// Does this agent pay penalties at all? Troops never do (they keep vanilla, locks included); the player,
+        /// companions (player clan) and other heroes each by their toggle; in a tournament only when
+        /// <see cref="GearMasterySettings.ApplyInTournaments"/>.
+        /// </summary>
+        public static bool AppliesTo(PenaltyTarget who, bool inTournament, GearMasterySettings settings)
+        {
+            if (settings == null) return false;
+            if (inTournament && !settings.ApplyInTournaments) return false;
+            return who switch
+            {
+                PenaltyTarget.Player => settings.ApplyToPlayer,
+                PenaltyTarget.Companion => settings.ApplyToCompanions,
+                PenaltyTarget.OtherHero => settings.ApplyToOtherHeroes,
+                _ => false,
+            };
+        }
 
         /// <summary>
         /// The wielded item's multipliers by its kind:

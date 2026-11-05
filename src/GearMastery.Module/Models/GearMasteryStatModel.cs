@@ -17,14 +17,16 @@ namespace GearMastery.Models
     /// - <see cref="UpdateAgentStats"/>, after the base (which assigns every property fresh, so nothing compounds):
     ///   a human's wielded weapon - SwingSpeedMultiplier, ThrustOrRangedReadySpeedMultiplier, HandlingMultiplier
     ///   (melee / thrown) or ReloadSpeed, ThrustOrRangedReadySpeedMultiplier (draw), WeaponInaccuracy (bow / crossbow
-    ///   / sling); on foot, MaxSpeedMultiplier by the worn armour. A HORSE agent: MountDifficulty set to 0 (lifts
-    ///   vanilla's mounting lock - Agent.CheckSkillForMounting, the "not enough riding" focus text and the AI's
-    ///   CanAgentRideMount all read it) and, with a rider, MountSpeed / MountManeuver by the RIDER's Riding shortfall.
+    ///   / sling); on foot, MaxSpeedMultiplier by the worn armour. Only for agents the who-filter covers
+    ///   (<see cref="AgentGear.Pays"/>: heroes by toggle, never troops). A HORSE agent under a covered RIDER:
+    ///   MountDifficulty set to 0 (lifts vanilla's mounting lock - Agent.CheckSkillForMounting, the "not enough
+    ///   riding" focus text and the AI's CanAgentRideMount all read it) and MountSpeed / MountManeuver by the rider's
+    ///   Riding shortfall. Troops' horses keep vanilla values, lock included.
     /// - <see cref="GetWeaponDamageMultiplier"/>: the one damage hook for melee AND missiles
     ///   (MissionCombatMechanicsHelper.ComputeBlowMagnitudeMelee / ...Missile multiply the base magnitude by it,
     ///   before armour), so no damage-model collision decoding is needed. An ammo blow takes the launcher in hand.
     /// - <see cref="GetWeaponInaccuracy"/>: the engine's callback (Agent.GetWeaponInaccuracy) for a launcher.
-    /// - <see cref="CanAgentRideMount"/>: the base's answer, or yes when only skill said no.
+    /// - <see cref="CanAgentRideMount"/>: the base's answer, or (covered agents only) yes when only skill said no.
     ///
     /// The tournament AI-level fix is mirrored from trax: TournamentBehavior sets the AI level on the TOP model only
     /// (a non-virtual write to a private field), so we push our field to every earlier stat model.
@@ -94,7 +96,7 @@ namespace GearMastery.Models
             // multipliers here - Sandbox's Initialize already routed through our UpdateAgentStats.
             try
             {
-                if (agent != null && !agent.IsHuman) agentDrivenProperties.MountDifficulty = 0f;
+                if (agent != null && agent.IsMount && AgentGear.Pays(agent.RiderAgent)) agentDrivenProperties.MountDifficulty = 0f;
             }
             catch (Exception e)
             {
@@ -150,9 +152,12 @@ namespace GearMastery.Models
 
         private void ApplyMount(Agent mount, AgentDrivenProperties p)
         {
-            p.MountDifficulty = 0f; // vanilla's hard lock lifted - our own tier table judges the rider instead
+            // Vanilla's hard lock is lifted only under a rider the who-filter covers (our tier table judges him
+            // instead); a troop's or a riderless horse keeps vanilla's MountDifficulty. A covered hero mounting a
+            // riderless horse passes through the Agent.CheckSkillForMounting prefix (Patches\MountSkillPatch).
             var rider = mount.RiderAgent;
             if (!AgentGear.Pays(rider)) return;
+            p.MountDifficulty = 0f;
             var horse = mount.SpawnEquipment?[EquipmentIndex.Horse].Item;
             if (horse == null) return;
             float s = AgentGear.Shortfall(this, rider!, horse, null, out var req);
@@ -209,7 +214,7 @@ namespace GearMastery.Models
             if (baseAllows) return true;
             try
             {
-                if (agent == null || targetMount == null || agent.Character == null) return false;
+                if (agent == null || targetMount == null || !AgentGear.Pays(agent)) return false; // troops: vanilla
                 bool canRide = (agent.GetAgentFlags() & AgentFlag.CanRide) != AgentFlag.None;
                 // What vanilla's check compared against (0 once our UpdateAgentStats ran on the horse) - so a refusal
                 // with difficulty 0 had another reason and stands.

@@ -1,10 +1,10 @@
 namespace GearMastery.Core
 {
     /// <summary>
-    /// Every tunable number of the mod. Penalty defaults are deliberately MILD (Toni, 2026-11-05): an expensive sword
-    /// in unskilled hands should be about as good as a standard sword, not useless. The maths in
+    /// Every tunable number of the mod (round 2: penalties bite - an item one or two tiers above your skill must come
+    /// out WORSE than the one you meet, Toni 2026-11-05). The maths in
     /// <see cref="Requirements"/> and <see cref="Penalties"/> clamps nonsense values itself (negative scale, penalty
-    /// above 100%), so a hand-edited settings file can never produce a negative multiplier.
+    /// above 100%, anchor ratios out of order), so a hand-edited settings file can never produce a negative multiplier.
     /// </summary>
     public sealed class GearMasterySettings
     {
@@ -57,58 +57,123 @@ namespace GearMastery.Core
         /// <summary>Multiplier on the table for horses.</summary>
         public float MountRequirementScale { get; set; } = 1f;
 
-        // ---- Penalty curve ----
+        // ---- Penalty curve (round 2, Toni 2026-11-05) ----
+        // Skill >= R: no penalty at all (the snap). Below it, by the ratio r = skill / R the penalty runs in straight
+        // lines through three anchors: r just under 1 -> Low, r = PenaltyMidRatio -> Mid, r = PenaltyHighRatio -> High,
+        // held at High below that. One Low / Mid / High triple per penalised stat, as fractions (0.25 = 25%).
 
-        /// <summary>
-        /// Penalties scale with shortfall^exponent. 0.5 (concave) makes a moderate gap bite: skill 30 on an R 90 item
-        /// (shortfall 0.67) already pays 82% of the maximum. 1 = linear. Values &lt;= 0 fall back to 1.
-        /// </summary>
-        public float PenaltyExponent { get; set; } = 0.5f;
+        /// <summary>Ratio skill / R at which every penalty reaches its Mid value.</summary>
+        public float PenaltyMidRatio { get; set; } = 0.6f;
 
-        // ---- Melee / throwing weapons ----
+        /// <summary>Ratio skill / R at (and below) which every penalty reaches its High value. Must be below
+        /// <see cref="PenaltyMidRatio"/>, else both ratios fall back to 0.6 / 0.3.</summary>
+        public float PenaltyHighRatio { get; set; } = 0.3f;
 
-        /// <summary>Weapon damage lost at full shortfall (0.15 = -15%).</summary>
-        public float MaxWeaponDamagePenalty { get; set; } = 0.15f;
+        /// <summary>Melee / thrown weapon damage lost: just below the requirement.</summary>
+        public float MeleeDamagePenaltyLow { get; set; } = 0.25f;
 
-        /// <summary>Weapon swing (and thrust) speed lost at full shortfall.</summary>
-        public float MaxSwingSpeedPenalty { get; set; } = 0.10f;
+        /// <summary>Melee / thrown weapon damage lost: at the mid ratio.</summary>
+        public float MeleeDamagePenaltyMid { get; set; } = 0.5f;
 
-        /// <summary>Weapon handling lost at full shortfall.</summary>
-        public float MaxHandlingPenalty { get; set; } = 0.15f;
+        /// <summary>Melee / thrown weapon damage lost: at the high ratio and below.</summary>
+        public float MeleeDamagePenaltyHigh { get; set; } = 0.75f;
 
-        // ---- Shields ----
+        /// <summary>Melee swing (and thrust / throw-ready) speed lost: just below the requirement.</summary>
+        public float MeleeSwingSpeedPenaltyLow { get; set; } = 0.125f;
 
-        /// <summary>Extra damage the shield takes at full shortfall (0.25 = +25%).</summary>
-        public float MaxShieldDamageTakenBonus { get; set; } = 0.25f;
+        /// <summary>Melee swing (and thrust / throw-ready) speed lost: at the mid ratio.</summary>
+        public float MeleeSwingSpeedPenaltyMid { get; set; } = 0.25f;
 
-        // ---- Armour ----
+        /// <summary>Melee swing (and thrust / throw-ready) speed lost: at the high ratio and below.</summary>
+        public float MeleeSwingSpeedPenaltyHigh { get; set; } = 0.375f;
 
-        /// <summary>Foot max speed lost when ALL worn armour is at full shortfall.</summary>
-        public float MaxArmourSpeedPenalty { get; set; } = 0.08f;
+        /// <summary>Melee weapon handling lost: just below the requirement.</summary>
+        public float MeleeHandlingPenaltyLow { get; set; } = 0.125f;
 
-        // ---- Bows / crossbows / slings ----
+        /// <summary>Melee weapon handling lost: at the mid ratio.</summary>
+        public float MeleeHandlingPenaltyMid { get; set; } = 0.25f;
 
-        /// <summary>Missile damage lost at full shortfall.</summary>
-        public float MaxRangedDamagePenalty { get; set; } = 0.15f;
+        /// <summary>Melee weapon handling lost: at the high ratio and below.</summary>
+        public float MeleeHandlingPenaltyHigh { get; set; } = 0.375f;
 
-        /// <summary>Reload / draw speed lost at full shortfall.</summary>
-        public float MaxReloadSpeedPenalty { get; set; } = 0.10f;
+        /// <summary>Extra damage the shield itself takes (Athletics vs the shield's R): just below the requirement.</summary>
+        public float ShieldDamageTakenBonusLow { get; set; } = 0.25f;
 
-        /// <summary>Extra inaccuracy at full shortfall (0.30 = +30%).</summary>
-        public float MaxInaccuracyBonus { get; set; } = 0.30f;
+        /// <summary>Extra damage the shield itself takes (Athletics vs the shield's R): at the mid ratio.</summary>
+        public float ShieldDamageTakenBonusMid { get; set; } = 0.5f;
 
-        // ---- Horses (Riding) ----
+        /// <summary>Extra damage the shield itself takes (Athletics vs the shield's R): at the high ratio and below.</summary>
+        public float ShieldDamageTakenBonusHigh { get; set; } = 0.75f;
 
-        /// <summary>Mount speed lost at full shortfall.</summary>
-        public float MaxHorseSpeedPenalty { get; set; } = 0.10f;
+        /// <summary>Foot max speed lost, per worn armour piece by its own ratio, then shared by armour weight (the whole set at the high anchor = the high value): just below the requirement.</summary>
+        public float ArmourSpeedPenaltyLow { get; set; } = 0.2f;
 
-        /// <summary>Mount maneuver lost at full shortfall.</summary>
-        public float MaxHorseManeuverPenalty { get; set; } = 0.10f;
+        /// <summary>Foot max speed lost, per worn armour piece by its own ratio, then shared by armour weight (the whole set at the high anchor = the high value): at the mid ratio.</summary>
+        public float ArmourSpeedPenaltyMid { get; set; } = 0.4f;
 
-        // ---- Scope / debug ----
+        /// <summary>Foot max speed lost, per worn armour piece by its own ratio, then shared by armour weight (the whole set at the high anchor = the high value): at the high ratio and below.</summary>
+        public float ArmourSpeedPenaltyHigh { get; set; } = 0.6f;
 
-        /// <summary>When true, only heroes are penalised (troops fight as in vanilla).</summary>
-        public bool HeroesOnly { get; set; }
+        /// <summary>Bow / crossbow / sling missile damage lost: just below the requirement.</summary>
+        public float RangedDamagePenaltyLow { get; set; } = 0.25f;
+
+        /// <summary>Bow / crossbow / sling missile damage lost: at the mid ratio.</summary>
+        public float RangedDamagePenaltyMid { get; set; } = 0.5f;
+
+        /// <summary>Bow / crossbow / sling missile damage lost: at the high ratio and below.</summary>
+        public float RangedDamagePenaltyHigh { get; set; } = 0.75f;
+
+        /// <summary>Bow / crossbow / sling reload and draw speed lost: just below the requirement.</summary>
+        public float RangedReloadSpeedPenaltyLow { get; set; } = 0.125f;
+
+        /// <summary>Bow / crossbow / sling reload and draw speed lost: at the mid ratio.</summary>
+        public float RangedReloadSpeedPenaltyMid { get; set; } = 0.25f;
+
+        /// <summary>Bow / crossbow / sling reload and draw speed lost: at the high ratio and below.</summary>
+        public float RangedReloadSpeedPenaltyHigh { get; set; } = 0.375f;
+
+        /// <summary>Extra bow / crossbow / sling inaccuracy: just below the requirement.</summary>
+        public float RangedInaccuracyBonusLow { get; set; } = 0.25f;
+
+        /// <summary>Extra bow / crossbow / sling inaccuracy: at the mid ratio.</summary>
+        public float RangedInaccuracyBonusMid { get; set; } = 0.5f;
+
+        /// <summary>Extra bow / crossbow / sling inaccuracy: at the high ratio and below.</summary>
+        public float RangedInaccuracyBonusHigh { get; set; } = 0.75f;
+
+        /// <summary>Horse speed lost (rider's Riding vs the horse's R): just below the requirement.</summary>
+        public float MountSpeedPenaltyLow { get; set; } = 0.25f;
+
+        /// <summary>Horse speed lost (rider's Riding vs the horse's R): at the mid ratio.</summary>
+        public float MountSpeedPenaltyMid { get; set; } = 0.5f;
+
+        /// <summary>Horse speed lost (rider's Riding vs the horse's R): at the high ratio and below.</summary>
+        public float MountSpeedPenaltyHigh { get; set; } = 0.75f;
+
+        /// <summary>Horse maneuver lost (rider's Riding vs the horse's R): just below the requirement.</summary>
+        public float MountManeuverPenaltyLow { get; set; } = 0.25f;
+
+        /// <summary>Horse maneuver lost (rider's Riding vs the horse's R): at the mid ratio.</summary>
+        public float MountManeuverPenaltyMid { get; set; } = 0.5f;
+
+        /// <summary>Horse maneuver lost (rider's Riding vs the horse's R): at the high ratio and below.</summary>
+        public float MountManeuverPenaltyHigh { get; set; } = 0.75f;
+
+        // ---- Who pays (never troops: non-hero agents always fight as in vanilla) ----
+
+        /// <summary>The player's own hero.</summary>
+        public bool ApplyToPlayer { get; set; } = true;
+
+        /// <summary>Heroes of the player's clan other than the player (companions, family).</summary>
+        public bool ApplyToCompanions { get; set; } = true;
+
+        /// <summary>Every other hero: lords, ladies and wanderers, friendly and enemy (custom battle heroes too).</summary>
+        public bool ApplyToOtherHeroes { get; set; } = true;
+
+        /// <summary>Penalties in tournament fights (off = everyone fights a tournament as in vanilla).</summary>
+        public bool ApplyInTournaments { get; set; } = true;
+
+        // ---- Debug ----
 
         /// <summary>Write the item requirement CSV at game start even outside the dev install.</summary>
         public bool DumpRequirementsCsv { get; set; }
