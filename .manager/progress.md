@@ -1,7 +1,7 @@
-# Manager progress: Gear Mastery
+# Manager progress: Item Skill Requirement Expanded (formerly Gear Mastery)
 
 ## Task
-New separate Bannerlord mod `gear-mastery` (folder `Documents\BannerlordMods\gear-mastery`, module `GearMastery`, deployed as `Modules\GearMastery.Dev`).
+New separate Bannerlord mod `item-skill-requirement-expanded` (folder `C:\Users\Asus ROG\Documents\BannerlordMods\item-skill-requirement-expanded`, module `ItemSkillRequirementExpanded`, deployed as `Modules\ItemSkillRequirementExpanded.Dev`, GitHub `TraxData313/item-skill-requirement-expanded`). Renamed from Gear Mastery on 2026-11-05; older lines below keep the old names as history.
 Soft skill requirements on melee weapons, shields and armour: you CAN equip, the requirement shows in red, and you get scaled penalties.
 
 ### Design (agreed with Toni, 2026-11-05)
@@ -167,3 +167,4 @@ Soft skill requirements on melee weapons, shields and armour: you CAN equip, the
   - Call sites: stat model (wielded, mount), damage model (shield), `AgentGear.ArmourSpeed`, `TooltipStats.Multiplier` and `TooltipPenalties.For` all pass `req.DisplayedTier`.
   - MCM: the two settings moved to a new group "Starter gear" (order 3, right after Penalty curve; later groups shifted by 1). Same ids (`StarterGearMaxTier`, `StarterGearMaxPenalty`), so a saved value carries over (MCM stores by id). Hint: "Tier 1 gear has no easier option, so its penalties stop here".
   - Tests: tier 1 spear at skill 0 -> damage/swing/handling 0.8 (tooltip too), tier 1 armour set at Athletics 0 -> foot speed 0.8, mixed set capped per piece, tier 1 horse 0.8 / shield 1.2, tier 2 spear / armour / horse / shield uncapped, thrown tier 1 javelin capped.
+- 2026-11-05 rename (Toni): Gear Mastery -> Item Skill Requirement Expanded. Module Id `ItemSkillRequirementExpanded` (dev `ItemSkillRequirementExpanded.Dev`, "Item Skill Requirement Expanded (dev)"), sln/projects/namespaces/DLLs `ItemSkillRequirementExpanded[.Core|.Module|.Core.Tests]`, `GearMasterySettings` -> `SkillRequirementSettings`, models -> `SkillRequirementStatModel` / `SkillRequirementDamageModel`, Harmony id `trax.bannerlord.itemskillrequirementexpanded`, MCM page `ItemSkillRequirementExpanded_v1`, log `Configs\ItemSkillRequirementExpanded\item_skill_requirement_expanded.log`, TextObject ids `gm_*` -> `isre_*`. Old MCM values and `Configs\GearMastery\` are not migrated (new folder, defaults). Repo folder + GitHub repo renamed by the manager afterwards. NOT deployed; remove the old `Modules\GearMastery.Dev` when the new one is deployed (else both load).

@@ -1,8 +1,8 @@
-# Builds Gear Mastery and installs it into the game's Modules folder as the DEV module.
+# Builds Item Skill Requirement Expanded and installs it into the game's Modules folder as the DEV module.
 # Usage: powershell -ExecutionPolicy Bypass -File tools\deploy.ps1 [-Configuration Release] [-GameFolder <path>]
 #
-# The dev install wears its own identity - folder and Id "GearMastery.Dev", shown as
-# "Gear Mastery (dev)" in the launcher. Same convention as MyTroopsGear.Dev / TraxCombatEnhancements.Dev:
+# The dev install wears its own identity - folder and Id "ItemSkillRequirementExpanded.Dev", shown as
+# "Item Skill Requirement Expanded (dev)" in the launcher. Same convention as MyTroopsGear.Dev / TraxCombatEnhancements.Dev:
 # it can sit beside a Steam Workshop copy and be picked deliberately (enable only ONE of the two).
 #
 # (ASCII only in this file: Windows PowerShell 5.1 reads a BOM-less script as ANSI.)
@@ -14,8 +14,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$moduleName = "GearMastery"
-$displayName = "Gear Mastery"
+$moduleName = "ItemSkillRequirementExpanded"
+$displayName = "Item Skill Requirement Expanded"
 $moduleProject = Join-Path $repoRoot "src\$moduleName.Module\$moduleName.Module.csproj"
 
 if (-not $GameFolder) {

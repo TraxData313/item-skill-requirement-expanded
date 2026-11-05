@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/BUTR/Bannerlord.XmlSchemas/master/SubModule.xsd">
   <!-- The RELEASE identity. tools\deploy.ps1 rewrites Id and Name for the local dev install
-       (Id GearMastery.Dev, "Gear Mastery (dev)"). Built against Bannerlord 1.4.8 (+ War Sails). -->
-  <Id value="GearMastery" />
-  <Name value="Gear Mastery" />
+       (Id ItemSkillRequirementExpanded.Dev, "Item Skill Requirement Expanded (dev)"). Built against Bannerlord 1.4.8 (+ War Sails). -->
+  <Id value="ItemSkillRequirementExpanded" />
+  <Name value="Item Skill Requirement Expanded" />
   <Version value="v0.1.0" />
   <DefaultModule value="false" />
   <ModuleCategory value="Singleplayer" />
@@ -31,9 +31,9 @@
   </DependedModuleMetadatas>
   <SubModules>
     <SubModule>
-      <Name value="Gear Mastery" />
-      <DLLName value="GearMastery.dll" />
-      <SubModuleClassType value="GearMastery.SubModule" />
+      <Name value="Item Skill Requirement Expanded" />
+      <DLLName value="ItemSkillRequirementExpanded.dll" />
+      <SubModuleClassType value="ItemSkillRequirementExpanded.SubModule" />
       <Tags />
     </SubModule>
   </SubModules>

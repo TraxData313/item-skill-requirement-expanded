@@ -1,4 +1,4 @@
-# Gear Mastery
+# Item Skill Requirement Expanded
 
 Bannerlord 1.4.8 (+ War Sails) mod: **soft skill requirements** on every weapon, shield, armour piece, bow /
 crossbow / sling and horse. Covered heroes CAN equip and ride anything; below an item's requirement it shows red and
@@ -7,6 +7,7 @@ they fight with penalties (snap curve). Troops always fight as in vanilla, locks
 Status and the agreed design: `.manager\progress.md` (the resume file, committed). Round 1 (steps 1-5) and round 2
 (steps 6-10: tier table, snap curve + who-filter, MCM, tooltip v2, final review) are done; pushed to `origin/main`.
 Not yet playtested in game as a whole (round 2 not deployed while Toni plays). Player docs: `README.md`.
+Renamed to this name on 2026-11-05 (old names and the leftover old dev install: last entry of `.manager\progress.md`).
 
 ## Design (agreed with Toni, 2026-11-05)
 
@@ -18,13 +19,13 @@ Not yet playtested in game as a whole (round 2 not deployed while Toni plays). P
   shields and armour = Athletics; bows Bow, crossbows Crossbow, slings Throwing, horses Riding.
 - Penalty curve (round 2, step 7) with a SNAP: skill >= R -> 0. Below, by r = skill / R (= 1 - shortfall),
   piecewise-linear through anchors r->1: Low, r 0.6: Mid, r 0.3: High, held at High below (`Penalties.Amount`;
-  ratios `PenaltyMidRatio` / `PenaltyHighRatio`). One Low/Mid/High triple per stat in `GearMasterySettings`:
+  ratios `PenaltyMidRatio` / `PenaltyHighRatio`). One Low/Mid/High triple per stat in `SkillRequirementSettings`:
   melee damage 25/50/75%, swing + handling 12.5/25/37.5%; shield damage taken +25/50/75%; armour foot speed
   20/40/60% per piece by its own r, then weighted by the piece's share of total worn weight; ranged damage 25/50/75%,
   reload/draw 12.5/25/37.5%, inaccuracy +25/50/75%; horse speed and maneuver 25/50/75%. Goal (Toni): an item a tier
   or two above your skill comes out WORSE than the one you meet (unit-tested for horses and swords).
 - Requirement table: `ItemRequirements` (module), lazy per game. Dev install writes
-  `Configs\GearMastery\item_requirements.csv` at game start.
+  `Configs\ItemSkillRequirementExpanded\item_requirements.csv` at game start.
 - Who pays (`AgentGear.Pays`): never troops (non-hero agents keep vanilla, mount lock included). Toggles
   `ApplyToPlayer`, `ApplyToCompanions` (player clan heroes), `ApplyToOtherHeroes`, `ApplyInTournaments` (mission has
   SandBox's `TournamentBehavior`). Horse penalty and mount unlock follow the RIDER: MountDifficulty is zeroed only
@@ -46,15 +47,15 @@ Not yet playtested in game as a whole (round 2 not deployed while Toni plays). P
 
 ## Layout
 
-- `src\GearMastery.Core` - netstandard2.0, **no game references**: requirement table maths, shortfall, penalty
+- `src\ItemSkillRequirementExpanded.Core` - netstandard2.0, **no game references**: requirement table maths, shortfall, penalty
   scaling, settings, `SettingsMenu` (every setting's MCM group / label / hint / range and its mapping onto
-  `GearMasterySettings` - the MCM adapter, game-free). Unit-tested.
-- `src\GearMastery.Module` - net472 module (assembly `GearMastery.dll`, namespace `GearMastery`): `SubModule`,
+  `SkillRequirementSettings` - the MCM adapter, game-free). Unit-tested.
+- `src\ItemSkillRequirementExpanded.Module` - net472 module (assembly `ItemSkillRequirementExpanded.dll`, namespace `ItemSkillRequirementExpanded`): `SubModule`,
   `ModLog`, `McmSettings` (the MCM page, fluent builder), `ItemRequirements` (the table + THE live settings object),
   `AgentGear` (item of a blow, shortfall from the model's effective skill - deliberately NOT cached per agent:
   captains / Phalanx / level-ups move it mid-battle), `MountRefreshLogic` (refreshes a horse when mounted);
   `Models\` the decorator models; `Patches\` the Harmony patches (`MountSkillPatch` once at the first game start of any type; inventory `CanUseItemPatch`, `ItemTooltipPatch` once at the first campaign start). Depends on `Bannerlord.Harmony` (not shipped).
-- `tests\GearMastery.Core.Tests` - xunit, net8.0.
+- `tests\ItemSkillRequirementExpanded.Core.Tests` - xunit, net8.0.
 - `module\` - SubModule.xml. Build output lands in `module\bin` (git-ignored).
 - Machine paths: `Directory.Build.props.user` (git-ignored) sets `GameFolder` and `HarmonyBinFolder` (falls back to
   `Modules\Bannerlord.Harmony` when that has no 0Harmony.dll) and `McmBinFolder` (falls back to
@@ -63,19 +64,19 @@ Not yet playtested in game as a whole (round 2 not deployed while Toni plays). P
 ## Commands
 
 ```
-dotnet build GearMastery.sln -c Release
-dotnet test tests\GearMastery.Core.Tests -c Release
-powershell -ExecutionPolicy Bypass -File tools\deploy.ps1     # builds + installs Modules\GearMastery.Dev, "Gear Mastery (dev)"
+dotnet build ItemSkillRequirementExpanded.sln -c Release
+dotnet test tests\ItemSkillRequirementExpanded.Core.Tests -c Release
+powershell -ExecutionPolicy Bypass -File tools\deploy.ps1     # builds + installs Modules\ItemSkillRequirementExpanded.Dev, "Item Skill Requirement Expanded (dev)"
 ```
 
-Release identity in `module\SubModule.xml` is Id `GearMastery`; only deploy.ps1 re-badges it `.Dev`. Never install
-the non-dev module into the game's Modules (it would load beside `GearMastery.Dev`).
+Release identity in `module\SubModule.xml` is Id `ItemSkillRequirementExpanded`; only deploy.ps1 re-badges it `.Dev`. Never install
+the non-dev module into the game's Modules (it would load beside `ItemSkillRequirementExpanded.Dev`).
 
 deploy.ps1 refuses if the DLLs are locked (game running). Never launch, restart or kill the game without asking Toni.
-Mod log: `Documents\Mount and Blade II Bannerlord\Configs\GearMastery\gear_mastery.log`. Settings live in MCM (Mod
-Options > Gear Mastery; MCM saves them under `Configs\ModSettings\Global\GearMastery`); every change is logged as
+Mod log: `Documents\Mount and Blade II Bannerlord\Configs\ItemSkillRequirementExpanded\item_skill_requirement_expanded.log`. Settings live in MCM (Mod
+Options > Item Skill Requirement Expanded; MCM saves them under `Configs\ModSettings\Global\ItemSkillRequirementExpanded`); every change is logged as
 `[settings] X: old -> new (MCM)`. Without MCM: defaults + one `[mcm]` line. A new setting = a property in
-`GearMasterySettings` + a line in `SettingsMenu.All` (group, label, hint, range; `Req(...)` when it changes requirements).
+`SkillRequirementSettings` + a line in `SettingsMenu.All` (group, label, hint, range; `Req(...)` when it changes requirements).
 
 ## Design rules
 
@@ -99,4 +100,4 @@ Options > Gear Mastery; MCM saves them under `Configs\ModSettings\Global\GearMas
 - **MCM is optional**: MCM types only inside method bodies of `McmSettings` (fluent builder, `Action<object>` instance
   methods - never a type deriving from / a field of / a lambda over an MCM type), else the game's `GetTypes()` refuses
   the whole mod without MCM. Check: `dotnet run --project ..\trax_combat_enhancements\tools\AssemblyGuard -c Release --
-  module\bin\Win64_Shipping_Client\GearMastery.dll MCMv5`.
+  module\bin\Win64_Shipping_Client\ItemSkillRequirementExpanded.dll MCMv5`.

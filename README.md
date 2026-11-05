@@ -1,4 +1,4 @@
-# Gear Mastery
+# Item Skill Requirement Expanded
 
 A Mount & Blade II: Bannerlord mod (1.4.8, War Sails compatible) that makes skill requirements **soft**. You can
 equip anything. If your skill is below what an item asks for, the requirement shows in red in the inventory and you
@@ -115,7 +115,7 @@ A hero the toggles leave out is treated like a troop: vanilla stats, vanilla loc
 
 ## Settings
 
-Everything is in the in-game **Mod Configuration Menu** (Mod Options > Gear Mastery) if you have MCM
+Everything is in the in-game **Mod Configuration Menu** (Mod Options > Item Skill Requirement Expanded) if you have MCM
 (Bannerlord.MBOptionScreen) installed:
 
 - **Who is affected**: the four toggles above.
@@ -134,10 +134,10 @@ puts both back to 60% / 30%. Without MCM the mod runs on the defaults.
 
 ## Compatibility
 
-- **trax_combat_enhancements** (and other mods that change the combat models): Gear Mastery wraps whatever
+- **trax_combat_enhancements** (and other mods that change the combat models): Item Skill Requirement Expanded wraps whatever
   agent-stat and damage models were registered before it and only multiplies on top. Trax's Athletics stamina and
-  Gear Mastery's penalties stack (a tired hero in armour above his Athletics is slower for both reasons). Load order
-  does not matter for that; Gear Mastery asks to load after trax so the chain is tidy.
+  Item Skill Requirement Expanded's penalties stack (a tired hero in armour above his Athletics is slower for both reasons). Load order
+  does not matter for that; Item Skill Requirement Expanded asks to load after trax so the chain is tidy.
 - **War Sails**: its naval models are wrapped the same way.
 - Needs **Harmony** (Bannerlord.Harmony): equipping bows and horses above vanilla's lock, mounting any horse in
   battle, and the tooltip. If a game update breaks one of those patches, that part is skipped and logged; the
@@ -161,8 +161,8 @@ puts both back to 60% / 30%. Without MCM the mod runs on the defaults.
 ## Build
 
 ```
-dotnet build GearMastery.sln -c Release
-dotnet test tests\GearMastery.Core.Tests -c Release
+dotnet build ItemSkillRequirementExpanded.sln -c Release
+dotnet test tests\ItemSkillRequirementExpanded.Core.Tests -c Release
 powershell -ExecutionPolicy Bypass -File tools\deploy.ps1
 ```
 
