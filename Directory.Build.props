@@ -5,8 +5,9 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <!-- Path to the Bannerlord installation; override in Directory.Build.props.user (git-ignored) if yours differs -->
     <GameFolder>D:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord</GameFolder>
-    <!-- Bannerlord.Harmony (Steam Workshop 2859188632): not referenced yet (the inventory tooltip step will need it);
-         when it is, reference it but do NOT ship it - its module provides 0Harmony.dll -->
+    <!-- Bannerlord.Harmony (Steam Workshop 2859188632): referenced by the module (inventory patches), never shipped -
+         its module provides 0Harmony.dll. If this folder has no 0Harmony.dll the module csproj falls back to
+         $(GameFolder)\Modules\Bannerlord.Harmony. -->
     <HarmonyBinFolder>D:\SteamLibrary\steamapps\workshop\content\261550\2859188632\bin\Win64_Shipping_Client</HarmonyBinFolder>
   </PropertyGroup>
   <Import Project="Directory.Build.props.user" Condition="Exists('Directory.Build.props.user')" />

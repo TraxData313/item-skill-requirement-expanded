@@ -4,8 +4,8 @@ Bannerlord 1.4.8 (+ War Sails) mod: **soft skill requirements** on melee weapons
 anything; if your skill is below the item's requirement, the requirement shows in red and you fight with scaled
 penalties. Bows, crossbows and horses become soft too (R = vanilla difficulty).
 
-Status and the agreed design: `.manager\progress.md` (the resume file, committed). Steps 1 (scaffold) and 2
-(requirements core) are done; combat penalties and the tooltip come next.
+Status and the agreed design: `.manager\progress.md` (the resume file, committed). Steps 1-4 (scaffold, requirements
+core, combat penalties, inventory unlock + tooltip) are done; the independent review pass comes next.
 
 ## Design (agreed with Toni, 2026-11-05)
 
@@ -32,10 +32,12 @@ Status and the agreed design: `.manager\progress.md` (the resume file, committed
 - `src\GearMastery.Core` - netstandard2.0, **no game references**: requirement table maths, shortfall, penalty
   scaling, settings. Unit-tested.
 - `src\GearMastery.Module` - net472 module (assembly `GearMastery.dll`, namespace `GearMastery`): `SubModule`,
-  `ModLog`; `Models\` will hold the decorator models.
+  `ModLog`; `Models\` the decorator models; `Patches\` the Harmony patches (inventory only: `CanUseItemPatch`,
+  `ItemTooltipPatch`), applied once at the first campaign start. Depends on `Bannerlord.Harmony` (not shipped).
 - `tests\GearMastery.Core.Tests` - xunit, net8.0.
 - `module\` - SubModule.xml. Build output lands in `module\bin` (git-ignored).
-- Machine paths: `Directory.Build.props.user` (git-ignored) sets `GameFolder` (and later `HarmonyBinFolder`).
+- Machine paths: `Directory.Build.props.user` (git-ignored) sets `GameFolder` and `HarmonyBinFolder` (falls back to
+  `Modules\Bannerlord.Harmony` when that has no 0Harmony.dll).
 
 ## Commands
 

@@ -2,6 +2,9 @@ using System;
 using System.Linq;
 using GearMastery.Core;
 using GearMastery.Models;
+using GearMastery.Patches;
+using HarmonyLib;
+using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.ComponentInterfaces;
@@ -10,6 +13,10 @@ namespace GearMastery
 {
     public class SubModule : MBSubModuleBase
     {
+        internal const string HarmonyId = "trax.bannerlord.gearmastery";
+
+        private static bool _patched;
+
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
@@ -25,10 +32,37 @@ namespace GearMastery
             {
                 ModLog.Info("load", "game start: " + (game?.GameType?.GetType().Name ?? "unknown game type"));
                 RegisterModels(gameStarterObject);
+                if (game?.GameType is Campaign) ApplyInventoryPatches();
             }
             catch (Exception e)
             {
                 ModLog.Error("load", "OnGameStart", e);
+            }
+        }
+
+        /// <summary>
+        /// The inventory side (campaign only, once per process): each patch in its own try/catch, so a game update that
+        /// renames one target only loses that part. Patched at the first campaign start, never at module load.
+        /// </summary>
+        private static void ApplyInventoryPatches()
+        {
+            if (_patched) return;
+            _patched = true;
+            Patch("CharacterHelper.CanUseItem postfix (bows / crossbows / slings / horses equippable)", h => CanUseItemPatch.Apply(h));
+            Patch("ItemMenuVM.AddSkillRequirement prefix (requirement line coloured by skill < R)", h => ItemTooltipPatch.ApplyRequirementLine(h));
+            Patch("ItemMenuVM.SetGeneralComponentTooltip postfix (requirement + penalty lines)", h => ItemTooltipPatch.ApplyGeneralTooltip(h));
+        }
+
+        private static void Patch(string what, Action<Harmony> apply)
+        {
+            try
+            {
+                apply(new Harmony(HarmonyId));
+                ModLog.Info("patches", "applied: " + what);
+            }
+            catch (Exception e)
+            {
+                ModLog.Error("patches", "NOT applied (carrying on without it): " + what, e);
             }
         }
 

@@ -20,6 +20,19 @@
     <ProjectReference Include="..\GearMastery.Core\GearMastery.Core.csproj" />
   </ItemGroup>
 
+  <!-- Harmony (inventory patches): referenced, never shipped - the Bannerlord.Harmony module provides 0Harmony.dll.
+       HarmonyBinFolder (Directory.Build.props / .user) points at the Workshop copy; when that is missing (mods
+       copied into Modules\, 2026-11-04) fall back to Modules\Bannerlord.Harmony. -->
+  <PropertyGroup>
+    <HarmonyBinFolder Condition="!Exists('$(HarmonyBinFolder)\0Harmony.dll')">$(GameFolder)\Modules\Bannerlord.Harmony\bin\Win64_Shipping_Client</HarmonyBinFolder>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(HarmonyBinFolder)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
   <!-- The game assemblies are referenced from the local install and never copied to output -->
   <ItemGroup>
     <Reference Include="SandBox">
