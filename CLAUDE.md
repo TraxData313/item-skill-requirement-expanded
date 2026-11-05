@@ -4,8 +4,9 @@ Bannerlord 1.4.8 (+ War Sails) mod: **soft skill requirements** on melee weapons
 anything; if your skill is below the item's requirement, the requirement shows in red and you fight with scaled
 penalties. Bows, crossbows and horses become soft too (R = vanilla difficulty).
 
-Status and the agreed design: `.manager\progress.md` (the resume file, committed). Steps 1-4 (scaffold, requirements
-core, combat penalties, inventory unlock + tooltip) are done; the independent review pass comes next.
+Status and the agreed design: `.manager\progress.md` (the resume file, committed). All 5 steps are done (scaffold,
+requirements core, combat penalties, inventory unlock + tooltip, review + settings file + docs). Not yet playtested
+in game; no remote yet. Player docs: `README.md`.
 
 ## Design (agreed with Toni, 2026-11-05)
 
@@ -21,19 +22,23 @@ core, combat penalties, inventory unlock + tooltip) are done; the independent re
   - shields: the shield takes up to +25% damage;
   - armour: foot max speed -8%, weighted by the weight share of the under-skilled pieces;
   - bows/crossbows: damage -15%, reload -10%, inaccuracy +30%; horses: speed and maneuver -10%.
+  All tunable in settings.json without recompiling.
 - Requirement table: `ItemRequirements` (module), lazy per game. Dev install writes
   `Configs\GearMastery\item_requirements.csv` at game start.
-- Applies to every agent (setting: heroes only).
+- Applies to every agent (setting: heroes only). The mount unlock (horse `MountDifficulty` zeroed, CanAgentRideMount)
+  applies to everyone regardless.
 - Inventory tooltip: vanilla `ItemMenuVM.AddSkillRequirement` draws "Requires <skill> <n>" red/green; we add the same
   line for our items plus a penalty line.
 
 ## Layout
 
 - `src\GearMastery.Core` - netstandard2.0, **no game references**: requirement table maths, shortfall, penalty
-  scaling, settings. Unit-tested.
+  scaling, settings, `SettingsFile` (settings.json text: commented writer, dependency-free reader). Unit-tested.
 - `src\GearMastery.Module` - net472 module (assembly `GearMastery.dll`, namespace `GearMastery`): `SubModule`,
-  `ModLog`; `Models\` the decorator models; `Patches\` the Harmony patches (inventory only: `CanUseItemPatch`,
-  `ItemTooltipPatch`), applied once at the first campaign start. Depends on `Bannerlord.Harmony` (not shipped).
+  `ModLog`, `SettingsLoader` (reads settings.json at every game start), `ItemRequirements` (the table),
+  `AgentGear` (item of a blow, shortfall from the model's effective skill - deliberately NOT cached per agent:
+  captains / Phalanx / level-ups move it mid-battle), `MountRefreshLogic` (refreshes a horse when mounted);
+  `Models\` the decorator models; `Patches\` the Harmony patches (inventory only: `CanUseItemPatch`, `ItemTooltipPatch`), applied once at the first campaign start. Depends on `Bannerlord.Harmony` (not shipped).
 - `tests\GearMastery.Core.Tests` - xunit, net8.0.
 - `module\` - SubModule.xml. Build output lands in `module\bin` (git-ignored).
 - Machine paths: `Directory.Build.props.user` (git-ignored) sets `GameFolder` and `HarmonyBinFolder` (falls back to
@@ -51,7 +56,9 @@ Release identity in `module\SubModule.xml` is Id `GearMastery`; only deploy.ps1 
 the non-dev module into the game's Modules (it would load beside `GearMastery.Dev`).
 
 deploy.ps1 refuses if the DLLs are locked (game running). Never launch, restart or kill the game without asking Toni.
-Mod log: `Documents\Mount and Blade II Bannerlord\Configs\GearMastery\gear_mastery.log`.
+Mod log: `Documents\Mount and Blade II Bannerlord\Configs\GearMastery\gear_mastery.log`; settings (created with
+defaults when missing, bad values -> default + `[settings]` log line): `...\Configs\GearMastery\settings.json`.
+A new setting = a property in `GearMasterySettings` + a line in `SettingsFile.All` (key, words, range).
 
 ## Design rules
 
