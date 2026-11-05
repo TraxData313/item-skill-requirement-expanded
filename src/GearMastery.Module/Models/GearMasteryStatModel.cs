@@ -132,7 +132,7 @@ namespace GearMastery.Models
                 if (req != null && s > 0f)
                 {
                     // Thrown usage (javelin in its throwing mode): ranged anchors - damage + aim, no swing / handling.
-                    var m = CombatPenalties.ForWielded(req.Kind, s, settings, usage != null && usage.IsRangedWeapon);
+                    var m = CombatPenalties.ForWielded(req.Kind, s, settings, usage != null && usage.IsRangedWeapon, req.DisplayedTier);
                     if (!m.IsIdentity)
                     {
                         p.SwingSpeedMultiplier *= m.Swing;
@@ -182,7 +182,7 @@ namespace GearMastery.Models
                 float s = AgentGear.Shortfall(this, agent, item, usage, out var req);
                 if (req == null || s <= 0f) return value;
                 // A thrown javelin's blow carries its thrown usage (RangedWeapon flag) -> ranged damage anchors.
-                return value * CombatPenalties.DamageMultiplier(req.Kind, ammo, s, ItemRequirements.Settings, !ammo && weapon.IsRangedWeapon);
+                return value * CombatPenalties.DamageMultiplier(req.Kind, ammo, s, ItemRequirements.Settings, !ammo && weapon.IsRangedWeapon, req.DisplayedTier);
             }
             catch (Exception e)
             {
@@ -202,7 +202,7 @@ namespace GearMastery.Models
                 float s = AgentGear.Shortfall(this, agent, item, weapon, out var req);
                 if (req == null || s <= 0f) return value;
                 // Launchers and thrown usages (weapon.IsRangedWeapon holds here); melee kinds give 1.
-                return value * CombatPenalties.InaccuracyMultiplier(req.Kind, weapon.IsRangedWeapon, s, ItemRequirements.Settings);
+                return value * CombatPenalties.InaccuracyMultiplier(req.Kind, weapon.IsRangedWeapon, s, ItemRequirements.Settings, req.DisplayedTier);
             }
             catch (Exception e)
             {

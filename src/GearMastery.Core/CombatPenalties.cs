@@ -94,8 +94,10 @@ namespace GearMastery.Core
         ///   no ready / swing / handling penalty).
         /// - Ranged (bow / crossbow / sling): damage, reload, draw (ThrustOrRangedReady) = the reload multiplier, inaccuracy.
         /// - Shield / Armour / Mount: nothing here (they have their own hooks).
+        /// A launcher's <paramref name="displayedTier"/> (vanilla's "Tier N") brings in the starter cap
+        /// (<see cref="StarterCap"/>); null = no cap.
         /// </summary>
-        public static WieldedMultipliers ForWielded(SkillKind kind, float shortfall, GearMasterySettings settings, bool thrownUsage = false)
+        public static WieldedMultipliers ForWielded(SkillKind kind, float shortfall, GearMasterySettings settings, bool thrownUsage = false, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return WieldedMultipliers.Identity;
             switch (kind)
@@ -118,14 +120,15 @@ namespace GearMastery.Core
                 }
                 case SkillKind.Ranged:
                 {
-                    float reload = Penalties.ReloadSpeedMultiplier(shortfall, settings);
+                    float cap = StarterCap(kind, displayedTier, settings);
+                    float reload = CapLoss(Penalties.ReloadSpeedMultiplier(shortfall, settings), cap);
                     return new WieldedMultipliers(
-                        Penalties.RangedDamageMultiplier(shortfall, settings),
+                        CapLoss(Penalties.RangedDamageMultiplier(shortfall, settings), cap),
                         1f,
                         reload,
                         1f,
                         reload,
-                        Penalties.InaccuracyMultiplier(shortfall, settings));
+                        CapGain(Penalties.InaccuracyMultiplier(shortfall, settings), cap));
                 }
                 default:
                     return WieldedMultipliers.Identity;
@@ -137,23 +140,50 @@ namespace GearMastery.Core
         /// usage of a Weapon-kind item (javelin thrown) its own requirement with the RANGED damage anchors; a missile
         /// that is AMMO (arrow, bolt, sling stone) the requirement of the launcher in hand (kind Ranged). Anything else 1.
         /// </summary>
-        public static float DamageMultiplier(SkillKind kind, bool blowIsAmmo, float shortfall, GearMasterySettings settings, bool thrownUsage = false)
+        public static float DamageMultiplier(SkillKind kind, bool blowIsAmmo, float shortfall, GearMasterySettings settings, bool thrownUsage = false, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return 1f;
-            if (blowIsAmmo) return kind == SkillKind.Ranged ? Penalties.RangedDamageMultiplier(shortfall, settings) : 1f;
+            if (blowIsAmmo)
+                return kind == SkillKind.Ranged
+                    ? CapLoss(Penalties.RangedDamageMultiplier(shortfall, settings), StarterCap(kind, displayedTier, settings))
+                    : 1f;
             if (kind != SkillKind.Weapon) return 1f;
             return thrownUsage ? Penalties.RangedDamageMultiplier(shortfall, settings) : Penalties.WeaponDamageMultiplier(shortfall, settings);
         }
 
         /// <summary>The inaccuracy multiplier for a ranged usage: launchers (kind Ranged) and thrown usages of
         /// Weapon-kind items; 1 for everything else.</summary>
-        public static float InaccuracyMultiplier(SkillKind kind, bool thrownUsage, float shortfall, GearMasterySettings settings)
+        public static float InaccuracyMultiplier(SkillKind kind, bool thrownUsage, float shortfall, GearMasterySettings settings, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return 1f;
-            return kind == SkillKind.Ranged || IsThrownUsage(kind, thrownUsage)
-                ? Penalties.InaccuracyMultiplier(shortfall, settings)
-                : 1f;
+            if (kind == SkillKind.Ranged)
+                return CapGain(Penalties.InaccuracyMultiplier(shortfall, settings), StarterCap(kind, displayedTier, settings));
+            return IsThrownUsage(kind, thrownUsage) ? Penalties.InaccuracyMultiplier(shortfall, settings) : 1f;
         }
+
+        /// <summary>
+        /// The starter cap for this item, as the most any one penalty may take (0.2 = -20% damage / reload, +20%
+        /// inaccuracy); 1 = no cap. Only launchers (kind Ranged: bows, crossbows, slings) whose displayed tier is at
+        /// most <see cref="GearMasterySettings.StarterGearMaxTier"/> are starter gear - there are no tier 0 bows or
+        /// crossbows, so without it a hero at skill 0 had no way to start learning (Toni, 2026-11-05). A cap of 100% or
+        /// more changes nothing; the snap at skill &gt;= R is untouched (no shortfall, no penalty to cap).
+        /// </summary>
+        public static float StarterCap(SkillKind kind, int? displayedTier, GearMasterySettings settings)
+        {
+            if (settings == null || kind != SkillKind.Ranged || displayedTier == null) return 1f;
+            if (displayedTier.Value > settings.StarterGearMaxTier) return 1f;
+            float cap = settings.StarterGearMaxPenalty;
+            if (float.IsNaN(cap)) return 1f;
+            return cap < 0f ? 0f : cap > 1f ? 1f : cap;
+        }
+
+        /// <summary>A loss multiplier (below 1) held at 1 - cap; untouched when cap &gt;= 1.</summary>
+        private static float CapLoss(float multiplier, float cap) =>
+            cap >= 1f || multiplier >= 1f - cap ? multiplier : 1f - cap;
+
+        /// <summary>A gain multiplier (above 1, e.g. inaccuracy) held at 1 + cap; untouched when cap &gt;= 1.</summary>
+        private static float CapGain(float multiplier, float cap) =>
+            cap >= 1f || multiplier <= 1f + cap ? multiplier : 1f + cap;
 
         /// <summary>
         /// The mounting check with vanilla's skill lock lifted: the base model's answer, or yes when the rider can ride

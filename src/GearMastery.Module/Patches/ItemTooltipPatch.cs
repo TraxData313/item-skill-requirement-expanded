@@ -346,7 +346,7 @@ namespace GearMastery.Patches
             var stat = StatFor(kindSide.Req.Kind, kindSide.Thrown, row);
             if (stat == null) return null;
             value = BaseValue(side, stat.Value);
-            float m = side.Req == null ? 1f : TooltipStats.Multiplier(side.Req.Kind, side.Thrown, stat.Value, side.Shortfall, settings);
+            float m = side.Req == null ? 1f : TooltipStats.Multiplier(side.Req.Kind, side.Thrown, stat.Value, side.Shortfall, settings, side.Req.DisplayedTier);
             after = TooltipStats.After(stat.Value, value, m);
             return stat;
         }
@@ -472,7 +472,7 @@ namespace GearMastery.Patches
             if (character == null || !AgentGear.CharacterPays(character)) return null;
             int skill = ItemRequirements.GetSkill(character, skillObject);
             if (!TooltipPenalties.IsShort(req.Value, skill)) return null;
-            var parts = TooltipPenalties.For(req.Kind, Requirements.Shortfall(req.Value, skill), ItemRequirements.Settings, thrownUsage);
+            var parts = TooltipPenalties.For(req.Kind, Requirements.Shortfall(req.Value, skill), ItemRequirements.Settings, thrownUsage, req.DisplayedTier);
             if (parts.Count == 0) return null;
             var texts = new List<string>(parts.Count);
             foreach (var part in parts)

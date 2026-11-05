@@ -52,7 +52,7 @@ namespace GearMastery.Core
         /// The penalties of an item of this kind at this shortfall, in display order. Empty when the shortfall is 0
         /// or every part rounds to 0%.
         /// </summary>
-        public static IReadOnlyList<PenaltyPart> For(SkillKind kind, float shortfall, GearMasterySettings settings, bool thrownUsage = false)
+        public static IReadOnlyList<PenaltyPart> For(SkillKind kind, float shortfall, GearMasterySettings settings, bool thrownUsage = false, int? displayedTier = null)
         {
             var parts = new List<PenaltyPart>(3);
             if (settings == null || !(shortfall > 0f)) return parts;
@@ -78,9 +78,13 @@ namespace GearMastery.Core
                         Penalties.ArmourSpeedMultiplier(new[] { new ArmourPiece(1f, shortfall) }, settings));
                     break;
                 case SkillKind.Ranged:
-                    Add(parts, PenaltyStat.Damage, Penalties.RangedDamageMultiplier(shortfall, settings));
-                    Add(parts, PenaltyStat.ReloadSpeed, Penalties.ReloadSpeedMultiplier(shortfall, settings));
-                    Add(parts, PenaltyStat.Inaccuracy, Penalties.InaccuracyMultiplier(shortfall, settings));
+                {
+                    // The models' function, so the starter cap (displayedTier) applies here too.
+                    var m = CombatPenalties.ForWielded(kind, shortfall, settings, false, displayedTier);
+                    Add(parts, PenaltyStat.Damage, m.Damage);
+                    Add(parts, PenaltyStat.ReloadSpeed, m.Reload);
+                    Add(parts, PenaltyStat.Inaccuracy, m.Inaccuracy);
+                }
                     break;
                 case SkillKind.Mount:
                     Add(parts, PenaltyStat.HorseSpeed, Penalties.HorseSpeedMultiplier(shortfall, settings));

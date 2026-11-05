@@ -142,6 +142,17 @@ namespace GearMastery.Core
         /// <summary>Extra bow / crossbow / sling inaccuracy: at the high ratio and below.</summary>
         public float RangedInaccuracyBonusHigh { get; set; } = 0.75f;
 
+        /// <summary>
+        /// Starter launchers (Toni, 2026-11-05: there are no tier 0 bows or crossbows, so a hero with no skill had no
+        /// way to start learning without the full penalty): bows / crossbows / slings whose displayed tier
+        /// (round(Tierf) clamped 0..6) is at most this have every penalty capped at <see cref="StarterGearMaxPenalty"/>.
+        /// </summary>
+        public int StarterGearMaxTier { get; set; } = 1;
+
+        /// <summary>The cap on each penalty of a starter launcher (damage and reload / draw speed lost, extra
+        /// inaccuracy), as a fraction: 0.2 = at most -20% / +20%. 1 or more = no cap.</summary>
+        public float StarterGearMaxPenalty { get; set; } = 0.2f;
+
         /// <summary>Horse speed lost (rider's Riding vs the horse's R): just below the requirement.</summary>
         public float MountSpeedPenaltyLow { get; set; } = 0.25f;
 

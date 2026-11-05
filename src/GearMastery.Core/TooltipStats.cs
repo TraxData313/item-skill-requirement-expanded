@@ -43,7 +43,7 @@ namespace GearMastery.Core
         /// The multiplier battle applies to what this row shows, for an item of <paramref name="kind"/> at this
         /// shortfall (1 = row untouched). Rows of the wrong family (a shield's swing speed, armour values) give 1.
         /// </summary>
-        public static float Multiplier(SkillKind kind, bool thrownUsage, TooltipStat stat, float shortfall, GearMasterySettings settings)
+        public static float Multiplier(SkillKind kind, bool thrownUsage, TooltipStat stat, float shortfall, GearMasterySettings settings, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return 1f;
             bool thrown = CombatPenalties.IsThrownUsage(kind, thrownUsage);
@@ -73,9 +73,10 @@ namespace GearMastery.Core
                     switch (stat)
                     {
                         // Draw (ThrustOrRangedReady) and reload share one multiplier.
-                        case TooltipStat.LauncherSpeed: return CombatPenalties.ForWielded(kind, shortfall, settings).ThrustOrRangedReady;
-                        case TooltipStat.LauncherDamage: return CombatPenalties.DamageMultiplier(kind, true, shortfall, settings);
-                        case TooltipStat.Accuracy: return CombatPenalties.InaccuracyMultiplier(kind, false, shortfall, settings);
+                        // displayedTier: the starter cap (CombatPenalties.StarterCap), as in battle.
+                        case TooltipStat.LauncherSpeed: return CombatPenalties.ForWielded(kind, shortfall, settings, false, displayedTier).ThrustOrRangedReady;
+                        case TooltipStat.LauncherDamage: return CombatPenalties.DamageMultiplier(kind, true, shortfall, settings, false, displayedTier);
+                        case TooltipStat.Accuracy: return CombatPenalties.InaccuracyMultiplier(kind, false, shortfall, settings, displayedTier);
                         default: return 1f;
                     }
                 case SkillKind.Mount:

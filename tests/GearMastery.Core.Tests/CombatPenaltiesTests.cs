@@ -164,4 +164,79 @@ public class CombatPenaltiesTests
         // skill was enough, so another reason said no: stays no.
         Assert.False(CombatPenalties.AllowMount(false, true, 80f, 60f));
     }
+    // ---- starter cap (Toni, 2026-11-05: Hunting Bow at Bow 0 showed -75%; there are no tier 0 bows) ----
+
+    private const float HuntingBowTierf = 0.75f; // vanilla "Tier 1", R = 15
+
+    [Fact]
+    public void HuntingBowAtBowZero_DamageCappedAtTwentyPercent()
+    {
+        int r = Requirements.Requirement(SkillKind.Ranged, HuntingBowTierf, Defaults);
+        Assert.Equal(15, r);
+        int tier = Requirements.DisplayedTier(HuntingBowTierf);
+        Assert.Equal(1, tier);
+        float s = Requirements.Shortfall(r, 0);
+
+        Assert.Equal(0.8f, CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, s, Defaults, false, tier));
+        var m = CombatPenalties.ForWielded(SkillKind.Ranged, s, Defaults, false, tier);
+        Assert.Equal(0.8f, m.Damage);
+        Assert.Equal(0.8f, m.Reload);
+        Assert.Equal(0.8f, m.ThrustOrRangedReady);
+        Assert.Equal(1.2f, m.Inaccuracy);
+        Assert.Equal(1.2f, CombatPenalties.InaccuracyMultiplier(SkillKind.Ranged, false, s, Defaults, tier));
+
+        // The tooltip reads the same functions: "Damage: 32 (40-8)".
+        float tm = TooltipStats.Multiplier(SkillKind.Ranged, false, TooltipStat.LauncherDamage, s, Defaults, tier);
+        Assert.Equal(32, TooltipStats.After(TooltipStat.LauncherDamage, 40, tm));
+        Assert.Equal(0.8f, TooltipStats.Multiplier(SkillKind.Ranged, false, TooltipStat.LauncherSpeed, s, Defaults, tier));
+        Assert.Equal(1.2f, TooltipStats.Multiplier(SkillKind.Ranged, false, TooltipStat.Accuracy, s, Defaults, tier));
+
+        // Snap untouched: skill >= R -> no penalty.
+        Assert.Equal(1f, CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, Requirements.Shortfall(r, 15), Defaults, false, tier));
+    }
+
+    [Fact]
+    public void TierTwoBow_NotCapped()
+    {
+        const float tierf = 2f;
+        int tier = Requirements.DisplayedTier(tierf);
+        Assert.Equal(2, tier);
+        float s = Requirements.Shortfall(Requirements.Requirement(SkillKind.Ranged, tierf, Defaults), 0);
+        Assert.Equal(Penalties.RangedDamageMultiplier(s, Defaults), CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, s, Defaults, false, tier));
+        Assert.Equal(0.25f, CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, s, Defaults, false, tier), 4);
+        var m = CombatPenalties.ForWielded(SkillKind.Ranged, s, Defaults, false, tier);
+        Assert.Equal(Penalties.ReloadSpeedMultiplier(s, Defaults), m.Reload);
+        Assert.Equal(Penalties.InaccuracyMultiplier(s, Defaults), m.Inaccuracy);
+    }
+
+    [Fact]
+    public void StarterCapOfHundredPercent_ChangesNothing()
+    {
+        var settings = new GearMasterySettings { StarterGearMaxPenalty = 1f, RangedInaccuracyBonusHigh = 2.5f };
+        int tier = Requirements.DisplayedTier(HuntingBowTierf);
+        foreach (float s in new[] { 0.05f, 0.4f, 0.7f, 1f })
+        {
+            var capped = CombatPenalties.ForWielded(SkillKind.Ranged, s, settings, false, tier);
+            var plain = CombatPenalties.ForWielded(SkillKind.Ranged, s, settings);
+            Assert.Equal(plain.Damage, capped.Damage);
+            Assert.Equal(plain.Reload, capped.Reload);
+            Assert.Equal(plain.Inaccuracy, capped.Inaccuracy);
+            Assert.Equal(Penalties.InaccuracyMultiplier(s, settings), CombatPenalties.InaccuracyMultiplier(SkillKind.Ranged, false, s, settings, tier));
+        }
+    }
+
+    [Fact]
+    public void StarterCap_OnlyLaunchersAtOrBelowTheMaxTier()
+    {
+        Assert.Equal(0.2f, CombatPenalties.StarterCap(SkillKind.Ranged, 0, Defaults));
+        Assert.Equal(0.2f, CombatPenalties.StarterCap(SkillKind.Ranged, 1, Defaults));
+        Assert.Equal(1f, CombatPenalties.StarterCap(SkillKind.Ranged, 2, Defaults));
+        Assert.Equal(1f, CombatPenalties.StarterCap(SkillKind.Ranged, null, Defaults));
+        Assert.Equal(1f, CombatPenalties.StarterCap(SkillKind.Weapon, 1, Defaults));
+        Assert.Equal(1f, CombatPenalties.StarterCap(SkillKind.Mount, 1, Defaults));
+        var tier3 = new GearMasterySettings { StarterGearMaxTier = 3 };
+        Assert.Equal(0.2f, CombatPenalties.StarterCap(SkillKind.Ranged, 3, tier3));
+        // A thrown javelin (Weapon kind) is not starter gear: full ranged anchors.
+        Assert.Equal(Penalties.RangedDamageMultiplier(1f, Defaults), CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, 1f, Defaults, true, 1));
+    }
 }
