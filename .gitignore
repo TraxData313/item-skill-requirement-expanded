@@ -14,3 +14,6 @@ steam_appid.txt
 steam_workshop_uploader.txt
 
 # .manager/progress.md IS committed: it is the resume file for manager-mode work.
+
+# Thumbnail build intermediates (the screenshots themselves live in docs/screenshots and are committed)
+/tools/build/
