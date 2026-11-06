@@ -32,6 +32,7 @@ Troops are never touched. They fight exactly as in vanilla.
 | ![Throwing axe, held](docs/screenshots/07-throwing-axe-held.jpg) **7.** The same axe, one-handed tab: asks One Handed instead. | ![Javelin](docs/screenshots/08-javelin-thrown.jpg) **8.** Harpoon (Throwing 80) next to a Simple Javelin you have mastered. |
 | ![Longbow](docs/screenshots/09-longbow-no-skill.jpg) **9.** A Tier 3 longbow at Bow 0: equippable, but weak and wide. | ![Hunting bow](docs/screenshots/10-hunting-bow-starter-cap.jpg) **10.** Starter gear: a Tier 1 Hunting Bow at Bow 0 costs only 20%. |
 | ![Horses](docs/screenshots/11-horses.jpg) **11.** Horses ask Riding: speed and maneuver after the penalty. | ![Orange rows](docs/screenshots/12-inventory-orange-rows.jpg) **12.** v1.1.0: items above the hero's skill show orange in the inventory; vanilla red still means "can't equip". |
+| ![Same culture bonus](docs/screenshots/13-inventory-culture-bonus.jpg) **13.** v1.2.0: Battanian gear on a Battanian hero, "Requires: One Handed 85 (yours 91 +23 Battanian)". | |
 
 ## What asks for what
 
