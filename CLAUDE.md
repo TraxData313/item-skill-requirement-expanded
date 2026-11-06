@@ -6,7 +6,7 @@ they fight with penalties (snap curve). Troops always fight as in vanilla, locks
 
 Status and the agreed design: `.manager\progress.md` (the resume file, committed). Round 1 (steps 1-5) and round 2
 (steps 6-10: tier table, snap curve + who-filter, MCM, tooltip v2, final review) are done; pushed to `origin/main`.
-v1.1.0 orange rows and v1.2.0 same culture bonus done (2026-11-06). Player docs: `README.md`.
+v1.1.0 orange rows and v1.2.0 same culture bonus done and published (2026-11-06: GitHub release, Steam update; Nexus by hand). Player docs: `README.md`.
 Renamed to this name on 2026-11-05 (old names and the leftover old dev install: last entry of `.manager\progress.md`).
 
 ## Design (agreed with Toni, 2026-11-05)

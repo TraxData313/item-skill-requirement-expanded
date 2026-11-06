@@ -182,3 +182,5 @@ Soft skill requirements on melee weapons, shields and armour: you CAN equip, the
   - Tooltip: `Requires: Athletics 200 (yours 150 +35 Battanian)` - colour by the effective value; adjective from `CultureBonus.Adjective` (English for the 6 main cultures + Nord, else the game's culture name).
   - Cache: new `ItemRequirements.SettingsVersion` bumped on every MCM change (and every Reset); the orange-row cache clears when it moved, so a settings change can't leave stale rows (the earlier stale-cache bug class).
   - **Check in game**: a Battanian in Battanian gear sees "+N Battanian" and green from the threshold; a non-Battanian sees the plain line; toggle off in MCM -> plain line next hover.
+- 2026-11-06 v1.2.0 published: screenshot 13 (culture bonus tooltip), GitHub release v1.2.0, Steam item 3834307298 updated
+  ("Uploading done!", change notes + description). Nexus: by hand, Toni.
