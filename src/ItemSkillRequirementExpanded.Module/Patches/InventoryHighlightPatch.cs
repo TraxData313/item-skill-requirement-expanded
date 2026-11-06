@@ -37,6 +37,7 @@ namespace ItemSkillRequirementExpanded.Patches
         private static Action<InventoryItemTupleWidget>? _update;
         private static WeakReference<SPInventoryVM>? _inventory;
         private static readonly Dictionary<string, bool> Cache = new Dictionary<string, bool>();
+        private static int _cacheVersion = -1; // ItemRequirements.SettingsVersion the Cache was filled under
         private static readonly HashSet<InventoryItemTupleWidget> Live = new HashSet<InventoryItemTupleWidget>();
         private static bool _brushMissingLogged;
 
@@ -152,6 +153,13 @@ namespace ItemSkillRequirementExpanded.Patches
             if (string.IsNullOrEmpty(itemId)) return false;
             SPInventoryVM? vm = null;
             if (_inventory == null || !_inventory.TryGetTarget(out vm) || vm == null) return false;
+            // A settings change (MCM: bonus, toggles, requirements) since the rows were cached: decide afresh.
+            int version = ItemRequirements.SettingsVersion;
+            if (version != _cacheVersion)
+            {
+                Cache.Clear();
+                _cacheVersion = version;
+            }
             if (Cache.TryGetValue(itemId!, out var cached)) return cached;
 
             var item = FindItem(rightSide ? vm.RightItemListVM : vm.LeftItemListVM, itemId!)
@@ -166,7 +174,7 @@ namespace ItemSkillRequirementExpanded.Patches
                 // Multi-usage weapons: the PRIMARY usage's skill (the tab vanilla's tooltip opens on).
                 var skill = req.SkillFor(null);
                 result = InventoryHighlight.AboveSkill(ItemRequirements.Settings, AgentGear.CharacterPays(character),
-                    vanillaDefaultLook: true, req.Value, ItemRequirements.GetSkill(character, skill));
+                    vanillaDefaultLook: true, req.Value, CultureMatch.Effective(character, req, ItemRequirements.GetSkill(character, skill)));
             }
             Cache[itemId!] = result;
             return result;

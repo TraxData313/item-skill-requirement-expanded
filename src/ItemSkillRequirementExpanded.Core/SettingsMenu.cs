@@ -119,18 +119,19 @@ namespace ItemSkillRequirementExpanded.Core
 
         public static readonly MenuGroup Who = new MenuGroup("Who is affected", 0);
         public static readonly MenuGroup Inventory = new MenuGroup("Inventory", 1);
-        public static readonly MenuGroup Requirements = new MenuGroup("Requirements", 2);
-        public static readonly MenuGroup Curve = new MenuGroup("Penalty curve", 3);
-        public static readonly MenuGroup Starter = new MenuGroup("Starter gear", 4);
-        public static readonly MenuGroup Melee = new MenuGroup("Melee weapons", 5);
-        public static readonly MenuGroup Armour = new MenuGroup("Armour", 6);
-        public static readonly MenuGroup Shields = new MenuGroup("Shields", 7);
-        public static readonly MenuGroup Ranged = new MenuGroup("Bows, crossbows and slings", 8);
-        public static readonly MenuGroup Mounts = new MenuGroup("Horses", 9);
-        public static readonly MenuGroup Debug = new MenuGroup("Debug", 10);
+        public static readonly MenuGroup Culture = new MenuGroup("Same culture bonus", 2);
+        public static readonly MenuGroup Requirements = new MenuGroup("Requirements", 3);
+        public static readonly MenuGroup Curve = new MenuGroup("Penalty curve", 4);
+        public static readonly MenuGroup Starter = new MenuGroup("Starter gear", 5);
+        public static readonly MenuGroup Melee = new MenuGroup("Melee weapons", 6);
+        public static readonly MenuGroup Armour = new MenuGroup("Armour", 7);
+        public static readonly MenuGroup Shields = new MenuGroup("Shields", 8);
+        public static readonly MenuGroup Ranged = new MenuGroup("Bows, crossbows and slings", 9);
+        public static readonly MenuGroup Mounts = new MenuGroup("Horses", 10);
+        public static readonly MenuGroup Debug = new MenuGroup("Debug", 11);
 
         public static IReadOnlyList<MenuGroup> Groups { get; } =
-            new[] { Who, Inventory, Requirements, Curve, Starter, Melee, Armour, Shields, Ranged, Mounts, Debug };
+            new[] { Who, Inventory, Culture, Requirements, Curve, Starter, Melee, Armour, Shields, Ranged, Mounts, Debug };
 
         private const string LowHint = " Just below the requirement (skill/requirement close to 100%).";
         private const string MidHint = " At the curve's mid point (default: skill at 60% of the requirement).";
@@ -156,6 +157,17 @@ namespace ItemSkillRequirementExpanded.Core
             Flag(Inventory, nameof(SkillRequirementSettings.HighlightItemsAboveSkill), "Highlight items above your skill",
                 "In the inventory lists, items whose requirement is above the selected hero's skill are tinted orange (the primary use's skill for weapons with two uses). Vanilla's red - the hero can't use it at all - always wins. Only for heroes the 'Who is affected' toggles cover. Default on.",
                 s => s.HighlightItemsAboveSkill, (s, v) => s.HighlightItemsAboveSkill = v),
+
+            // ---- Same culture bonus (CultureBonus): the skill, not the requirement, so no Req(...) ----
+            Flag(Culture, nameof(SkillRequirementSettings.SameCultureBonusEnabled), "Same culture bonus",
+                "On gear of the hero's own culture (a Battanian in Battanian armour) his skill counts as skill x multiplier + points, before it is compared to the requirement. Items with no culture or the neutral culture get nothing. The tooltip shows it ('yours 150 +35 Battanian'). Default on.",
+                s => s.SameCultureBonusEnabled, (s, v) => s.SameCultureBonusEnabled = v),
+            Whole(Culture, nameof(SkillRequirementSettings.SameCultureBonusPoints), "Same culture bonus (+points)", 0, 50,
+                "Points added to the skill on same culture gear, after the multiplier. Default 5.",
+                s => s.SameCultureBonusPoints, (s, v) => s.SameCultureBonusPoints = v),
+            Num(Culture, nameof(SkillRequirementSettings.SameCultureBonusMultiplier), "Same culture bonus (x multiplier)", MenuKind.Float, 1, 2,
+                "Multiplier on the skill on same culture gear (steps of 0.05; 1.00 = none). With 1.20 and +5, Athletics 163 meets a 200 armour of your culture. Default 1.20.",
+                s => s.SameCultureBonusMultiplier, (s, v) => s.SameCultureBonusMultiplier = (float)(Math.Round(v * 20.0, MidpointRounding.AwayFromZero) / 20.0)),
 
             // ---- Requirements: the tier table and the per-category scales ----
             Tier(0, s => s.RequirementAtTier0, (s, v) => s.RequirementAtTier0 = v, 0),

@@ -82,5 +82,17 @@ namespace ItemSkillRequirementExpanded.Core
             float s = (requirement - (float)skill) / requirement;
             return s >= 1f ? 1f : s;
         }
+
+        /// <summary>
+        /// <see cref="Shortfall(int, int)"/> for a fractional skill (the same culture bonus, <see cref="CultureBonus"/>):
+        /// clamp((R - skill) / R, 0, 1); 0 when R &lt;= 0 or skill &gt;= R, 1 for NaN.
+        /// </summary>
+        public static float Shortfall(int requirement, double skill)
+        {
+            if (requirement <= 0 || skill >= requirement) return 0f;
+            if (double.IsNaN(skill)) return 1f;
+            double s = (requirement - skill) / requirement;
+            return s >= 1.0 ? 1f : (float)s;
+        }
     }
 }

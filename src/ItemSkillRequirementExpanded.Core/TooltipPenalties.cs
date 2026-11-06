@@ -48,6 +48,9 @@ namespace ItemSkillRequirementExpanded.Core
         /// <summary>Is the requirement unmet? (skill &lt; R; R &lt;= 0 never is.) Drives the red / green colour.</summary>
         public static bool IsShort(int requirement, int skill) => requirement > 0 && skill < requirement;
 
+        /// <summary><see cref="IsShort(int, int)"/> for an effective skill with the same culture bonus (<see cref="CultureBonus"/>).</summary>
+        public static bool IsShort(int requirement, double skill) => requirement > 0 && !(skill >= requirement);
+
         /// <summary>
         /// The penalties of an item of this kind at this shortfall, in display order. Empty when the shortfall is 0
         /// or every part rounds to 0%.

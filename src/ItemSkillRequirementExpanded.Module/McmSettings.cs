@@ -149,6 +149,7 @@ namespace ItemSkillRequirementExpanded
                     double before = _s.Get(ItemRequirements.Settings);
                     if (!_s.Set(ItemRequirements.Settings, value)) return;
                     if (_s.AffectsRequirements) ItemRequirements.Reset(); // rebuilt lazily with the new table
+                    else ItemRequirements.SettingsChanged(); // UI caches (orange rows) decide afresh
                     ModLog.Info("settings", _s.Id + ": " + Text(before) + " -> " + Text(_s.Get(ItemRequirements.Settings)) + " (MCM)");
                 }
                 catch (Exception e)

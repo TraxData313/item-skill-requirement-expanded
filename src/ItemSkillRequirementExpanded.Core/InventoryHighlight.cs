@@ -11,11 +11,12 @@ namespace ItemSkillRequirementExpanded.Core
         /// True when the row should be orange: the toggle is on (<see cref="SkillRequirementSettings.HighlightItemsAboveSkill"/>),
         /// the selected character pays penalties (who-toggles), vanilla shows the row in its default look
         /// (<paramref name="vanillaDefaultLook"/>: equippable by this character, usable in the open set), the item has a
-        /// requirement and the character's skill (raw, as the tooltip) is below it. Multi-usage weapons pass their
+        /// requirement and the character's skill (raw, as the tooltip, with the same culture bonus applied:
+        /// <see cref="CultureBonus.Effective(double, bool, SkillRequirementSettings)"/>) is below it. Multi-usage weapons pass their
         /// PRIMARY usage's skill (the one vanilla's tooltip opens on).
         /// </summary>
         public static bool AboveSkill(SkillRequirementSettings? settings, bool characterPays, bool vanillaDefaultLook,
-            int requirement, int skill)
+            int requirement, double skill)
         {
             if (settings == null || !settings.HighlightItemsAboveSkill) return false;
             if (!characterPays || !vanillaDefaultLook) return false;

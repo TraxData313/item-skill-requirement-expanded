@@ -131,7 +131,8 @@ namespace ItemSkillRequirementExpanded
         /// <summary>
         /// The agent's shortfall on the item (0 when not covered / met), using the model's effective skill
         /// (captain perks etc.), read fresh like vanilla's own stats. The skill is the one of <paramref name="usage"/>
-        /// (bastard sword in 2H mode -> Two Handed); null usage = the item's primary skill.
+        /// (bastard sword in 2H mode -> Two Handed); null usage = the item's primary skill. The same culture bonus
+        /// (<see cref="CultureMatch"/>) is applied to it.
         /// </summary>
         public static float Shortfall(AgentStatCalculateModel model, Agent agent, ItemObject? item, WeaponComponentData? usage,
             out ItemRequirement? requirement)
@@ -140,7 +141,8 @@ namespace ItemSkillRequirementExpanded
             if (item == null || requirement == null || !requirement.HasRequirement) return 0f;
             var skill = requirement.SkillFor(usage);
             if (skill == null) return 0f;
-            return Requirements.Shortfall(requirement.Value, model.GetEffectiveSkill(agent, skill));
+            // Same culture bonus on top of the model's effective skill (read fresh, like the skill: nothing cached).
+            return Requirements.Shortfall(requirement.Value, CultureMatch.Effective(agent.Character, requirement, model.GetEffectiveSkill(agent, skill)));
         }
 
         /// <summary>The foot max-speed multiplier from all worn armour (each piece by its own ratio, shared by weight).</summary>
@@ -169,7 +171,8 @@ namespace ItemSkillRequirementExpanded
                         lastSkill = req.Skill;
                         lastValue = model.GetEffectiveSkill(agent, req.Skill);
                     }
-                    s = Requirements.Shortfall(req.Value, lastValue);
+                    // Each piece by its own culture (a Battanian helmet over a Vlandian mail).
+                    s = Requirements.Shortfall(req.Value, CultureMatch.Effective(agent.Character, req, lastValue));
                     tier = req.DisplayedTier;
                 }
                 if (s > 0f) anyShort = true;

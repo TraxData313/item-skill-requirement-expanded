@@ -16,7 +16,7 @@ public class SettingsMenuTests
         var ids = SettingsMenu.All.Select(s => s.Id).ToList();
         Assert.Equal(ids.Count, ids.Distinct().Count());
         Assert.Equal(SettingProperties.Select(p => p.Name).OrderBy(n => n), ids.OrderBy(n => n));
-        Assert.Equal(54, ids.Count);
+        Assert.Equal(57, ids.Count);
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public class SettingsMenuTests
     [Fact]
     public void GroupsAreInPageOrderAndEachHasSettings()
     {
-        Assert.Equal(new[] { "Who is affected", "Inventory", "Requirements", "Penalty curve", "Starter gear", "Melee weapons", "Armour", "Shields",
+        Assert.Equal(new[] { "Who is affected", "Inventory", "Same culture bonus", "Requirements", "Penalty curve", "Starter gear", "Melee weapons", "Armour", "Shields",
             "Bows, crossbows and slings", "Horses", "Debug" }, SettingsMenu.Groups.Select(g => g.Name));
         Assert.Equal(Enumerable.Range(0, SettingsMenu.Groups.Count), SettingsMenu.Groups.Select(g => g.Order));
         foreach (var g in SettingsMenu.Groups)

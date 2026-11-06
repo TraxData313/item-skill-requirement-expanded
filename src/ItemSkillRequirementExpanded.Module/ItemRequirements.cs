@@ -25,9 +25,12 @@ namespace ItemSkillRequirementExpanded
         /// <param name="usages">The item's Weapons in usage-index order (empty for armour / horses).</param>
         /// <param name="usageSkills">Skill per usage, same length as <paramref name="usages"/>.</param>
         public ItemRequirement(SkillObject skill, int value, SkillKind kind, float tierf,
-            WeaponComponentData?[]? usages = null, SkillObject[]? usageSkills = null)
+            WeaponComponentData?[]? usages = null, SkillObject[]? usageSkills = null,
+            string? cultureId = null, string? cultureName = null)
         {
             Skill = skill;
+            CultureId = cultureId;
+            CultureName = cultureName;
             Value = value;
             Kind = kind;
             Tierf = tierf;
@@ -59,6 +62,13 @@ namespace ItemSkillRequirementExpanded
         public int DisplayedTier => Requirements.DisplayedTier(Tierf);
 
         public bool HasRequirement => Value > 0;
+
+        /// <summary>The item's culture StringId (ItemObject.Culture), null when it has none - for the same culture
+        /// bonus (<see cref="CultureMatch"/>). Fixed per item, so it is safe in the per-game cache.</summary>
+        public string? CultureId { get; }
+
+        /// <summary>The item culture's display name, for the tooltip's "+35 Battanian".</summary>
+        public string? CultureName { get; }
 
         /// <summary>Number of weapon usages known (0 for armour and horses).</summary>
         public int UsageCount => _usages.Length;
@@ -118,11 +128,21 @@ namespace ItemSkillRequirementExpanded
         // write its stale result back (the next query computes afresh).
         private static int _generation;
 
+        private static int _settingsVersion;
+
+        /// <summary>Bumped on every settings change (MCM, <see cref="SettingsChanged"/>) and every <see cref="Reset"/>:
+        /// UI caches that hold a decision built on settings (the orange rows) compare it and start afresh.</summary>
+        public static int SettingsVersion => System.Threading.Volatile.Read(ref _settingsVersion);
+
+        /// <summary>Any setting changed (MCM calls it for every change, requirement or not).</summary>
+        public static void SettingsChanged() => System.Threading.Interlocked.Increment(ref _settingsVersion);
+
         /// <summary>Forget everything (new game / game end, or a requirement setting changed in MCM).</summary>
         public static void Reset()
         {
             System.Threading.Interlocked.Increment(ref _generation);
             Cache.Clear();
+            SettingsChanged();
         }
 
         /// <summary>
@@ -175,12 +195,13 @@ namespace ItemSkillRequirementExpanded
 
         public static int GetSkill(Agent? agent, SkillObject? skill) => GetSkill(agent?.Character, skill);
 
-        /// <summary>Shortfall of this character on this item in this usage (null = primary), 0 when not covered or met.</summary>
+        /// <summary>Shortfall of this character on this item in this usage (null = primary), 0 when not covered or met.
+        /// Raw skill with the same culture bonus.</summary>
         public static float Shortfall(BasicCharacterObject? character, ItemObject? item, WeaponComponentData? usage = null)
         {
             var r = Get(item);
             if (r == null || !r.HasRequirement) return 0f;
-            return Requirements.Shortfall(r.Value, GetSkill(character, r.SkillFor(usage)));
+            return Requirements.Shortfall(r.Value, CultureMatch.Effective(character, r, GetSkill(character, r.SkillFor(usage))));
         }
 
         private static ItemRequirement? Compute(ItemObject item)
@@ -232,7 +253,8 @@ namespace ItemSkillRequirementExpanded
             var usages = Usages(item);
             var skills = new SkillObject[usages.Length];
             for (int i = 0; i < skills.Length; i++) skills[i] = skill;
-            return new ItemRequirement(skill, Requirements.Requirement(kind, tier, Settings), kind, tier, usages, skills);
+            return new ItemRequirement(skill, Requirements.Requirement(kind, tier, Settings), kind, tier, usages, skills,
+                item.Culture?.StringId, item.Culture?.Name?.ToString());
         }
 
         /// <summary>
@@ -257,7 +279,8 @@ namespace ItemSkillRequirementExpanded
                 skills[i] = ours(s) ? s! : primary;
             }
             float tier = SafeTier(item);
-            return new ItemRequirement(primary, Requirements.Requirement(kind, tier, Settings), kind, tier, usages, skills);
+            return new ItemRequirement(primary, Requirements.Requirement(kind, tier, Settings), kind, tier, usages, skills,
+                item.Culture?.StringId, item.Culture?.Name?.ToString());
         }
 
         private static WeaponComponentData?[] Usages(ItemObject item)

@@ -185,6 +185,18 @@ namespace ItemSkillRequirementExpanded.Core
         /// <summary>Penalties in tournament fights (off = everyone fights a tournament as in vanilla).</summary>
         public bool ApplyInTournaments { get; set; } = true;
 
+        // ---- Same culture bonus (v1.2.0, Toni 2026-11-06; CultureBonus) ----
+
+        /// <summary>A hero's skill counts boosted on gear of his own culture (item culture = hero culture, never the
+        /// neutral culture): skill x <see cref="SameCultureBonusMultiplier"/> + <see cref="SameCultureBonusPoints"/>.</summary>
+        public bool SameCultureBonusEnabled { get; set; } = true;
+
+        /// <summary>Points added to the skill on same culture gear (after the multiplier).</summary>
+        public int SameCultureBonusPoints { get; set; } = 5;
+
+        /// <summary>Multiplier on the skill on same culture gear (1 = none).</summary>
+        public float SameCultureBonusMultiplier { get; set; } = 1.2f;
+
         // ---- Inventory ----
 
         /// <summary>Tint inventory list rows orange when the selected hero's skill is below the item's requirement

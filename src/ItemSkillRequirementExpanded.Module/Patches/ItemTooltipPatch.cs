@@ -33,7 +33,8 @@ namespace ItemSkillRequirementExpanded.Patches
     ///   line (shield / armour). Both lists get a row (blank on the side without one) so the columns stay aligned.
     /// - Postfix on RefreshItemTooltips: rewrite the stat rows (found by vanilla's own label TextObjects), recolour
     ///   compared rows by after-penalty values; fallback compact line.
-    /// Character = ItemMenuVM._character (the hero whose equipment is open); skill = GetSkillValue, as vanilla.
+    /// Character = ItemMenuVM._character (the hero whose equipment is open); skill = GetSkillValue, as vanilla, plus the
+    /// same culture bonus (<see cref="CultureMatch"/>, v1.2.0) everywhere a skill meets R.
     /// </summary>
     internal static class ItemTooltipPatch
     {
@@ -316,7 +317,8 @@ namespace ItemSkillRequirementExpanded.Patches
             var usage = side.UsageIndex >= 0 ? weapons![side.UsageIndex] : null;
             side.Thrown = CombatPenalties.IsThrownUsage(req.Kind, usage != null && usage.IsRangedWeapon);
             var skill = SkillOfSide(side);
-            side.Shortfall = skill == null ? 0f : Requirements.Shortfall(req.Value, ItemRequirements.GetSkill(character, skill));
+            side.Shortfall = skill == null ? 0f
+                : Requirements.Shortfall(req.Value, CultureMatch.Effective(character, req, ItemRequirements.GetSkill(character, skill)));
             return side;
         }
 
@@ -445,19 +447,22 @@ namespace ItemSkillRequirementExpanded.Patches
             return req.SkillFor(usage);
         }
 
-        /// <summary>Vanilla's look: "Requires: " (target side only) + "&lt;Skill&gt; &lt;R&gt; (yours &lt;n&gt;)", green
-        /// when met or no character, red when short.</summary>
+        /// <summary>Vanilla's look: "Requires: " (target side only) + "&lt;Skill&gt; &lt;R&gt; (yours &lt;n&gt;)", or with the
+        /// same culture bonus "(yours 150 +35 Battanian)"; green when met (effective skill) or no character, red when short.</summary>
         private static ItemMenuTooltipPropertyVM RequirementLine(ItemRequirement req, SkillObject skill, BasicCharacterObject? character, bool isComparison)
         {
             string definition = isComparison ? "" : RequiresText().ToString();
             if (character == null)
                 return new ItemMenuTooltipPropertyVM(definition, skill.Name + " " + req.Value, 0, UIColors.PositiveIndicator);
             int yours = ItemRequirements.GetSkill(character, skill);
-            bool met = !TooltipPenalties.IsShort(req.Value, yours);
+            // Same culture bonus: the colour follows the effective skill; the text shows raw + the bonus
+            // ("yours 150 +35 Battanian"), the bonus rounded down so a red line never adds up to R.
+            double effective = CultureMatch.Effective(character, req, yours);
+            bool met = !TooltipPenalties.IsShort(req.Value, effective);
             var text = new TextObject("{=isre_requires_yours}{SKILL} {VALUE} (yours {YOURS})");
             text.SetTextVariable("SKILL", skill.Name);
             text.SetTextVariable("VALUE", req.Value);
-            text.SetTextVariable("YOURS", yours);
+            text.SetTextVariable("YOURS", CultureBonus.YoursText(yours, effective, CultureMatch.Adjective(req)));
             return new ItemMenuTooltipPropertyVM(definition, text.ToString(), 0, met ? UIColors.PositiveIndicator : UIColors.NegativeIndicator);
         }
 
@@ -470,7 +475,7 @@ namespace ItemSkillRequirementExpanded.Patches
         private static string? PenaltyText(ItemRequirement req, SkillObject skillObject, BasicCharacterObject? character, bool thrownUsage)
         {
             if (character == null || !AgentGear.CharacterPays(character)) return null;
-            int skill = ItemRequirements.GetSkill(character, skillObject);
+            double skill = CultureMatch.Effective(character, req, ItemRequirements.GetSkill(character, skillObject));
             if (!TooltipPenalties.IsShort(req.Value, skill)) return null;
             var parts = TooltipPenalties.For(req.Kind, Requirements.Shortfall(req.Value, skill), ItemRequirements.Settings, thrownUsage, req.DisplayedTier);
             if (parts.Count == 0) return null;
