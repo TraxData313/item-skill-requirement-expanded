@@ -114,6 +114,19 @@ reach under a 20 kg cuirass you master costs about 1% speed; the whole set far o
 Example: One Handed 71 with a Tier 6 sword (R 160, 44% of R) loses 63% of its damage. The same hero with a Tier 3
 sword (R 75, 95% of R) loses 28%; at One Handed 75 he loses nothing.
 
+## Same culture bonus
+
+Since v1.2.0 a hero knows his own people's gear better. When an item's culture is the hero's culture (a Battanian in
+Battanian armour), his skill counts as **skill x 1.2 + 5** before it is compared to R and before the penalty curve.
+Items with no culture, or the game's neutral culture, give no bonus.
+
+Example: a tier 7.5 Battanian armour asks Athletics 200. A Battanian meets it from Athletics **163**
+(163 x 1.2 + 5 = 200.6); at 162 (199.4) he is still just short. At Athletics 150 the tooltip reads
+`Requires: Athletics 200 (yours 150 +35 Battanian)`, red, and he pays the penalty of 185, not of 150.
+
+The bonus counts everywhere the skill meets R: battle, the tooltip colour and numbers, and the orange rows. The
+points, the multiplier and an on/off switch are settings.
+
 ## Who is affected
 
 | Who | Default |
@@ -129,7 +142,9 @@ A hero the toggles leave out is treated like a troop: vanilla stats, vanilla loc
 ## The inventory tooltip
 
 - `Requires: Two Handed 160 (yours 71)` - red when short, green when met, per usage tab (a bastard sword shows One
-  Handed on its one-handed tab and Two Handed on its two-handed tab).
+  Handed on its one-handed tab and Two Handed on its two-handed tab). Gear of the hero's own culture shows the bonus:
+  `Requires: Athletics 200 (yours 150 +35 Battanian)`; the colour follows the boosted value (the bonus is rounded
+  down, so a red line never adds up to R).
 - When short, the stat rows show the value **after** the penalty, then the vanilla value minus the penalty:
   `Swing Damage: 37 (99-62) Cut`, horse `Speed: 39 (52-13)`, bow `Accuracy: 79 (83-4)`. Comparing two items, the
   green / red "better / worse" colours compare the after-penalty values.
@@ -139,7 +154,7 @@ A hero the toggles leave out is treated like a troop: vanilla stats, vanilla loc
 ## Orange rows in the inventory list
 
 Since v1.1.0 the inventory lists (both sides) tint an item **orange** when its requirement is above the selected
-hero's skill: you can equip it, but you will fight with it at a penalty. Vanilla's **red** still means "this hero
+hero's skill (with the same culture bonus): you can equip it, but you will fight with it at a penalty. Vanilla's **red** still means "this hero
 can't use it at all" (wrong gender, not for the civilian set, a hard lock) and always wins over orange. A weapon with
 two uses (bastard sword, javelin) is judged by its first use - the tab its tooltip opens on. Switch heroes with the
 arrows and the rows follow the new hero's skills. Only heroes the toggles above cover get orange rows; turn it off with
@@ -153,6 +168,8 @@ Everything is in the in-game **Mod Configuration Menu** (Mod Options > Item Skil
 
 - **Who is affected**: the four toggles above.
 - **Inventory**: highlight items above your skill (orange rows; default on).
+- **Same culture bonus**: on/off (default on), **Same culture bonus (+points)** (0 to 50, default 5) and
+  **Same culture bonus (x multiplier)** (1.00 to 2.00 in steps of 0.05, default 1.20).
 - **Requirements**: every point of the tier table, the top tier, and a scale per category (melee, shields, armour,
   ranged, horses; 0 = no requirement for that category).
 - **Penalty curve**: where Mid and High sit (default 60% and 30% of R).

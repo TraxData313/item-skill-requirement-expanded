@@ -6,7 +6,7 @@ they fight with penalties (snap curve). Troops always fight as in vanilla, locks
 
 Status and the agreed design: `.manager\progress.md` (the resume file, committed). Round 1 (steps 1-5) and round 2
 (steps 6-10: tier table, snap curve + who-filter, MCM, tooltip v2, final review) are done; pushed to `origin/main`.
-Not yet playtested in game as a whole (round 2 not deployed while Toni plays). Player docs: `README.md`.
+v1.1.0 orange rows and v1.2.0 same culture bonus done (2026-11-06). Player docs: `README.md`.
 Renamed to this name on 2026-11-05 (old names and the leftover old dev install: last entry of `.manager\progress.md`).
 
 ## Design (agreed with Toni, 2026-11-05)
@@ -50,6 +50,14 @@ Renamed to this name on 2026-11-05 (old names and the leftover old dev install: 
   Toggle `HighlightItemsAboveSkill` (MCM group "Inventory", order 1). Equipped slots not tinted.
 - Thrown usages (javelin thrown; kind Weapon + usage IsRangedWeapon) take the RANGED anchors in battle and tooltip:
   damage + inaccuracy, no swing / ready / handling (`CombatPenalties.IsThrownUsage`).
+- Same culture bonus (v1.2.0, Toni 2026-11-06; Core `CultureBonus`, module `CultureMatch`): item culture ==
+  hero culture (StringId; none / `neutral_culture` never; NOT gated on IsMainCulture - Nords aren't main) -> skill
+  counts as `skill x SameCultureBonusMultiplier (1.2) + SameCultureBonusPoints (5)` (toggle `SameCultureBonusEnabled`),
+  rounded to 4 decimals, before R and the penalty curve - battle (on the model's effective skill), tooltip, orange
+  rows. R 200 -> raw 163. Compare doubles (`effective >= R`); show numbers ROUNDED DOWN (`CultureBonus.Shown`).
+  Tooltip: "Requires: Athletics 200 (yours 150 +35 Battanian)". Hero culture via `CharacterObject.Culture` (=
+  HeroObject.Culture; the base property is hidden by `new`). Item culture captured in `ItemRequirement.CultureId`.
+  Any UI cache of a settings-based decision checks `ItemRequirements.SettingsVersion` (bumped by every MCM change).
 - Starter cap (Toni, 2026-11-05): every item whose displayed tier <= `StarterGearMaxTier` (default 1), any category,
   has each penalty capped at `StarterGearMaxPenalty` (default 20%) - `CombatPenalties.StarterCap`, passed as
   `req.DisplayedTier` by models and tooltip; armour capped per piece before the weight share (`ArmourPiece.MaxPenalty`).
