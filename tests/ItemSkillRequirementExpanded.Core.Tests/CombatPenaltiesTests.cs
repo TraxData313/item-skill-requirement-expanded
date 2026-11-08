@@ -18,10 +18,10 @@ public class CombatPenaltiesTests
     [InlineData(PenaltyTarget.Player)]
     [InlineData(PenaltyTarget.Companion)]
     [InlineData(PenaltyTarget.OtherHero)]
-    public void HeroesPayByDefaultIncludingTournaments(PenaltyTarget who)
+    public void HeroesPayByDefaultButNotInTournaments(PenaltyTarget who)
     {
         Assert.True(CombatPenalties.AppliesTo(who, false, Defaults));
-        Assert.True(CombatPenalties.AppliesTo(who, true, Defaults));
+        Assert.False(CombatPenalties.AppliesTo(who, true, Defaults)); // tournaments off by default (2026-11-08)
     }
 
     [Fact]

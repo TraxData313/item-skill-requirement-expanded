@@ -24,7 +24,7 @@ public class PenaltiesTests
         Assert.Equal((0.25f, 0.5f, 0.75f), (Defaults.RangedInaccuracyBonusLow, Defaults.RangedInaccuracyBonusMid, Defaults.RangedInaccuracyBonusHigh));
         Assert.Equal((0.25f, 0.5f, 0.75f), (Defaults.MountSpeedPenaltyLow, Defaults.MountSpeedPenaltyMid, Defaults.MountSpeedPenaltyHigh));
         Assert.Equal((0.25f, 0.5f, 0.75f), (Defaults.MountManeuverPenaltyLow, Defaults.MountManeuverPenaltyMid, Defaults.MountManeuverPenaltyHigh));
-        Assert.True(Defaults.ApplyToPlayer && Defaults.ApplyToCompanions && Defaults.ApplyToOtherHeroes && Defaults.ApplyInTournaments);
+        Assert.True(Defaults.ApplyToPlayer && Defaults.ApplyToCompanions && Defaults.ApplyToOtherHeroes && !Defaults.ApplyInTournaments);
         Assert.Equal(150, Defaults.RequirementAtTier6);
     }
 

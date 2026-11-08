@@ -27,7 +27,7 @@ Renamed to this name on 2026-11-05 (old names and the leftover old dev install: 
 - Requirement table: `ItemRequirements` (module), lazy per game. Dev install writes
   `Configs\ItemSkillRequirementExpanded\item_requirements.csv` at game start.
 - Who pays (`AgentGear.Pays`): never troops (non-hero agents keep vanilla, mount lock included). Toggles
-  `ApplyToPlayer`, `ApplyToCompanions` (player clan heroes), `ApplyToOtherHeroes`, `ApplyInTournaments` (mission has
+  `ApplyToPlayer`, `ApplyToCompanions` (player clan heroes), `ApplyToOtherHeroes`, `ApplyInTournaments` (DEFAULT OFF since 2026-11-08: sparring gear asks R 80-145, `.manager/tournament_weapons.md`; mission has
   SandBox's `TournamentBehavior`). Horse penalty and mount unlock follow the RIDER: MountDifficulty is zeroed only
   under a covered rider, and a prefix on `Agent.CheckSkillForMounting` lets covered heroes mount any horse. The
   inventory honours the same toggles (`AgentGear.CharacterPays`): the CanUseItem unlock and our tooltip lines only for

@@ -183,7 +183,7 @@ namespace ItemSkillRequirementExpanded.Core
         public bool ApplyToOtherHeroes { get; set; } = true;
 
         /// <summary>Penalties in tournament fights (off = everyone fights a tournament as in vanilla).</summary>
-        public bool ApplyInTournaments { get; set; } = true;
+        public bool ApplyInTournaments { get; set; } = false; // off since 2026-11-08: tournament sparring gear asks R 80-145
 
         // ---- Same culture bonus (v1.2.0, Toni 2026-11-06; CultureBonus) ----
 

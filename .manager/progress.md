@@ -207,3 +207,6 @@ replacements (no code until he agrees).
   per-participant equipment copies already. Gaps with no T0-1 same class: crossbow, 2H axe, throwing axe, blunt lance.
 - Step 12 done: scope given to Toni in chat (A: tournament R from the sharp original / cap; B: per-hero swap to
   T0-1 same class for covered heroes; C: interim, toggle ApplyInTournaments off). WAITING for his choice; no code yet.
+- 2026-11-08 Toni chose C: `ApplyInTournaments` now defaults OFF (settings, MCM hint, README, CLAUDE.md, tests).
+  Toni has no saved MCM file for the mod, so the new default reaches his game. Build + 212 tests pass. Deploy waits:
+  the game was running (DLL locked) — run tools\deploy.ps1 once it is closed. A and B stay as options in the report.

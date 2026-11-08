@@ -150,7 +150,7 @@ namespace ItemSkillRequirementExpanded.Core
                 "Every other hero - lords, ladies and wanderers, friend and foe - pays penalties. Troops never do. Default on.",
                 s => s.ApplyToOtherHeroes, (s, v) => s.ApplyToOtherHeroes = v),
             Flag(Who, nameof(SkillRequirementSettings.ApplyInTournaments), "In tournaments",
-                "Penalties also apply in tournament fights. Off = everyone fights a tournament as in vanilla. Troops never pay. Default on.",
+                "Penalties also apply in tournament fights. Off = everyone fights a tournament as in vanilla (the practice weapons rank high and nobody picks them). Troops never pay. Default off.",
                 s => s.ApplyInTournaments, (s, v) => s.ApplyInTournaments = v),
 
             // ---- Inventory ----
