@@ -184,3 +184,26 @@ Soft skill requirements on melee weapons, shields and armour: you CAN equip, the
   - **Check in game**: a Battanian in Battanian gear sees "+N Battanian" and green from the threshold; a non-Battanian sees the plain line; toggle off in MCM -> plain line next hover.
 - 2026-11-06 v1.2.0 published: screenshot 13 (culture bonus tooltip), GitHub release v1.2.0, Steam item 3834307298 updated
   ("Uploading done!", change notes + description). Nexus: by hand, Toni.
+
+## Round 4 — Tournament weapons (Toni, 2026-11-08)
+
+### Task
+With the mod on, tournaments play badly: Toni (almost no Polearm) was handed a pike and did tiny damage even braced.
+Wanted: when a participant must be given e.g. a bow and has Bow 0, give a Tier 0-1 bow; every participant gets
+weapons fit for their skill. FIRST: inspect all possible tournament starting weapons and give Toni a SCOPE for
+replacements (no code until he agrees).
+
+### Steps (round 4)
+11. [x] Inventory: where vanilla picks tournament loadouts (code + XML templates), every possible starting weapon per
+    culture/set with tier, our R, skill; how our penalties hit them (ApplyInTournaments).
+12. [x] Write the replacement scope (options + recommendation) for Toni; wait for his go.
+
+### Log (round 4)
+- Step 11 done (2026-11-08): full report `.manager/tournament_weapons.md`. Key facts: loadouts from 63 culture
+  templates in `TournamentFightMissionController.PrepareForMatch()`, 1 random template per match, teams mirrored, no
+  skill considered. Sparring (blunt) copies score HIGHER Tierf than their sharp originals, so tournament melee asks
+  R 80-145 (worst: Menavlion 145, Glaive 140, Atgeir 135). No true pike; only brace item = Vlandian Sparring Lance
+  (R 60); on foot a braced hit does 0 in vanilla anyway. Hook: Harmony postfix on PrepareForMatch, `_match` field,
+  per-participant equipment copies already. Gaps with no T0-1 same class: crossbow, 2H axe, throwing axe, blunt lance.
+- Step 12 done: scope given to Toni in chat (A: tournament R from the sharp original / cap; B: per-hero swap to
+  T0-1 same class for covered heroes; C: interim, toggle ApplyInTournaments off). WAITING for his choice; no code yet.
