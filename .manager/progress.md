@@ -210,3 +210,6 @@ replacements (no code until he agrees).
 - 2026-11-08 Toni chose C: `ApplyInTournaments` now defaults OFF (settings, MCM hint, README, CLAUDE.md, tests).
   Toni has no saved MCM file for the mod, so the new default reaches his game. Build + 212 tests pass. Deploy waits:
   the game was running (DLL locked) — run tools\deploy.ps1 once it is closed. A and B stay as options in the report.
+- 2026-11-09 v1.2.1 published (Toni: "it works good"): SubModule v1.2.1, store texts say tournaments off by default,
+  GitHub release v1.2.1, Steam item 3834307298 updated ("Uploading done!"; Steam client had to be started first).
+  Nexus: by hand, Toni (changelog given in chat).
