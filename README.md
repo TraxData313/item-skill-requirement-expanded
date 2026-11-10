@@ -136,6 +136,7 @@ points, the multiplier and an on/off switch are settings.
 | Your clan's heroes (companions, family) | on |
 | Every other hero, friend and foe | on |
 | Penalties in tournaments | off |
+| Penalties in training (Training Battles drills, the training field, arena practice) | off |
 | Troops | **never** - vanilla, including vanilla's bow and horse locks |
 
 A hero the toggles leave out is treated like a troop: vanilla stats, vanilla locks, vanilla tooltip.

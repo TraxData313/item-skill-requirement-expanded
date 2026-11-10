@@ -213,3 +213,18 @@ replacements (no code until he agrees).
 - 2026-11-09 v1.2.1 published (Toni: "it works good"): SubModule v1.2.1, store texts say tournaments off by default,
   GitHub release v1.2.1, Steam item 3834307298 updated ("Uploading done!"; Steam client had to be started first).
   Nexus: by hand, Toni (changelog given in chat).
+
+## Round 5 — Training exempt (Toni, 2026-11-10)
+
+- Toni: "make the skill not matter in the training camp too, like in tournaments, since my skill is low for even those
+  wooden weapons." New setting `ApplyInTraining` (MCM "Who is affected", "In training", default OFF) beside
+  `ApplyInTournaments`; Core `CombatPenalties.AppliesTo(who, inTournament, inTraining, settings)`.
+- What counts as training (`AgentGear.DetectTraining`, cached per mission with the tournament flag in `KindOf`, campaign
+  only): (1) the TrainingBattles mod's own `TrainingBattles.TrainingBattleBehavior.TrainingActive` (public static bool,
+  set before the drill's battle opens and cleared in its aftermath - field, sea, siege, lord's hall), found by scanning
+  loaded assemblies for `TrainingBattles` and read by reflection, so no dependency; (2) a mission behaviour named
+  `TrainingFieldMissionController` (StoryMode's training field) or `ArenaPracticeFightMissionController` (SandBox's
+  arena practice). Each training mission logs `[mission] training fight: penalties off` once.
+- Build 0 errors, 213 tests pass, AssemblyGuard (MCMv5) OK.
+  - **Check in game**: start a drill -> the log has the `[mission]` line and a low-skill hero hits for vanilla damage;
+    MCM "In training" on -> penalties back next drill. The inventory tooltip still shows penalties (as for tournaments).
