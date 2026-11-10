@@ -52,6 +52,24 @@ public class CombatPenaltiesTests
         Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.Player, false, s));
     }
 
+    [Fact]
+    public void TrainingIsSparedByDefaultAndByItsOwnToggle()
+    {
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.Player, false, true, Defaults)); // off by default (2026-11-10)
+        Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.Player, false, false, Defaults));
+
+        var on = new SkillRequirementSettings { ApplyInTraining = true };
+        Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.Player, false, true, on));
+        Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.Companion, false, true, on));
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.Troop, false, true, on)); // troops never
+
+        // The two toggles are independent: tournaments on does not open training, and the reverse.
+        var tourneyOnly = new SkillRequirementSettings { ApplyInTournaments = true };
+        Assert.True(CombatPenalties.AppliesTo(PenaltyTarget.Player, true, false, tourneyOnly));
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.Player, false, true, tourneyOnly));
+        Assert.False(CombatPenalties.AppliesTo(PenaltyTarget.Player, true, false, on));
+    }
+
     [Theory]
     [InlineData(SkillKind.Weapon)]
     [InlineData(SkillKind.Ranged)]

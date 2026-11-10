@@ -152,6 +152,9 @@ namespace ItemSkillRequirementExpanded.Core
             Flag(Who, nameof(SkillRequirementSettings.ApplyInTournaments), "In tournaments",
                 "Penalties also apply in tournament fights. Off = everyone fights a tournament as in vanilla (the practice weapons rank high and nobody picks them). Troops never pay. Default off.",
                 s => s.ApplyInTournaments, (s, v) => s.ApplyInTournaments = v),
+            Flag(Who, nameof(SkillRequirementSettings.ApplyInTraining), "In training",
+                "Penalties also apply in training fights: the Training Battles mod's drills (field, sea and siege), the training field and arena practice. Off = everyone trains as in vanilla, whatever the practice gear asks. Troops never pay. Default off.",
+                s => s.ApplyInTraining, (s, v) => s.ApplyInTraining = v),
 
             // ---- Inventory ----
             Flag(Inventory, nameof(SkillRequirementSettings.HighlightItemsAboveSkill), "Highlight items above your skill",

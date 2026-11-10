@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using ItemSkillRequirementExpanded.Core;
 using SandBox.Tournaments.MissionLogics;
@@ -32,14 +33,15 @@ namespace ItemSkillRequirementExpanded
         }
 
         /// <summary>
-        /// A human HERO agent the who-filter covers (player / companions / other heroes toggles, tournaments toggle).
-        /// Troops never pay: they keep vanilla behaviour, mount lock included. Cheap: a few property reads plus a
-        /// per-mission cached tournament flag.
+        /// A human HERO agent the who-filter covers (player / companions / other heroes toggles, tournament and
+        /// training toggles). Troops never pay: they keep vanilla behaviour, mount lock included. Cheap: a few
+        /// property reads plus the per-mission cached kind.
         /// </summary>
         public static bool Pays(Agent? agent)
         {
             if (agent == null || !agent.IsHuman || agent.Character == null || !agent.IsHero) return false;
-            return CombatPenalties.AppliesTo(Who(agent), InTournament(agent.Mission), ItemRequirements.Settings);
+            var kind = KindOf(agent.Mission);
+            return CombatPenalties.AppliesTo(Who(agent), kind.Tournament, kind.Training, ItemRequirements.Settings);
         }
 
         /// <summary>Who the agent is for the filter. Campaign: by its Hero (main hero / player clan / other);
@@ -76,38 +78,49 @@ namespace ItemSkillRequirementExpanded
         public static bool CharacterPays(BasicCharacterObject? character) =>
             CombatPenalties.AppliesTo(WhoOf(character), false, ItemRequirements.Settings);
 
-        // ---- tournament flag, cached per mission (one immutable pair, swapped atomically: blows may run off-thread)
+        // ---- mission kind (tournament / training), cached per mission: one immutable object, swapped atomically
+        // (blows may run off-thread)
 
-        private sealed class TournamentFlag
+        private sealed class MissionKind
         {
-            public TournamentFlag(Mission mission, bool value)
+            public static readonly MissionKind None = new MissionKind(null, false, false);
+
+            public MissionKind(Mission? mission, bool tournament, bool training)
             {
                 Mission = mission;
-                Value = value;
+                Tournament = tournament;
+                Training = training;
             }
 
-            public Mission Mission { get; }
-            public bool Value { get; }
+            public Mission? Mission { get; }
+            public bool Tournament { get; }
+            public bool Training { get; }
         }
 
-        private static TournamentFlag? _tournament;
+        private static MissionKind? _kind;
+
+        private static MissionKind KindOf(Mission? mission)
+        {
+            if (mission == null) return MissionKind.None;
+            var cached = _kind;
+            if (cached != null && ReferenceEquals(cached.Mission, mission)) return cached;
+            var kind = new MissionKind(mission, DetectTournament(mission), DetectTraining(mission));
+            _kind = kind;
+            if (kind.Training) ModLog.Info("mission", "training fight: penalties " + (ItemRequirements.Settings.ApplyInTraining ? "on (MCM)" : "off"));
+            return kind;
+        }
 
         /// <summary>Is this mission a campaign tournament fight (SandBox's TournamentBehavior present)?</summary>
-        public static bool InTournament(Mission? mission)
-        {
-            if (mission == null) return false;
-            var cached = _tournament;
-            if (cached != null && ReferenceEquals(cached.Mission, mission)) return cached.Value;
-            bool value = DetectTournament(mission);
-            _tournament = new TournamentFlag(mission, value);
-            return value;
-        }
+        public static bool InTournament(Mission? mission) => KindOf(mission).Tournament;
+
+        /// <summary>Is this mission a training fight (Training Battles drill, training field, arena practice)?</summary>
+        public static bool InTraining(Mission? mission) => KindOf(mission).Training;
 
         /// <summary>Mission over: drop the cached reference (so the old Mission can be collected).</summary>
         public static void ForgetMission(Mission? mission)
         {
-            var cached = _tournament;
-            if (cached != null && (mission == null || ReferenceEquals(cached.Mission, mission))) _tournament = null;
+            var cached = _kind;
+            if (cached != null && (mission == null || ReferenceEquals(cached.Mission, mission))) _kind = null;
         }
 
         private static bool DetectTournament(Mission mission)
@@ -127,6 +140,61 @@ namespace ItemSkillRequirementExpanded
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool HasTournamentBehavior(Mission mission) =>
             mission.GetMissionBehavior<TournamentBehavior>() != null;
+
+        // Vanilla training missions, by behaviour type name (no StoryMode reference): StoryMode's training field
+        // (the tutorial camp) and SandBox's arena practice fight. Both hand out practice weapons.
+        private static readonly string[] TrainingBehaviourNames =
+        {
+            "TrainingFieldMissionController",
+            "ArenaPracticeFightMissionController",
+        };
+
+        /// <summary>
+        /// A training fight: a drill of Toni's Training Battles mod (its own flag
+        /// <c>TrainingBattles.TrainingBattleBehavior.TrainingActive</c>, true from the drill's battle start to its
+        /// aftermath - field, sea, siege and lord's hall alike; read by reflection, no dependency), or a vanilla
+        /// training mission (<see cref="TrainingBehaviourNames"/>). Campaign only.
+        /// </summary>
+        private static bool DetectTraining(Mission mission)
+        {
+            try
+            {
+                if (Campaign.Current == null) return false;
+                if (TrainingBattlesDrillActive()) return true;
+                foreach (var behaviour in mission.MissionBehaviors)
+                {
+                    var name = behaviour?.GetType().Name;
+                    if (name != null && Array.IndexOf(TrainingBehaviourNames, name) >= 0) return true;
+                }
+                return false;
+            }
+            catch (Exception e)
+            {
+                ModLog.ErrorOnce("gear.training", e);
+                return false;
+            }
+        }
+
+        private static PropertyInfo? _trainingActive;
+
+        private static bool TrainingBattlesDrillActive()
+        {
+            var property = _trainingActive;
+            if (property == null)
+            {
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (assembly.GetName().Name != "TrainingBattles") continue;
+                    property = assembly.GetType("TrainingBattles.TrainingBattleBehavior", false)?
+                        .GetProperty("TrainingActive", BindingFlags.Public | BindingFlags.Static);
+                    if (property != null && property.PropertyType == typeof(bool)) break;
+                    property = null;
+                }
+                if (property == null) return false; // mod not loaded (looked up again next mission: cheap)
+                _trainingActive = property;
+            }
+            return property.GetValue(null) is bool active && active;
+        }
 
         /// <summary>
         /// The agent's shortfall on the item (0 when not covered / met), using the model's effective skill

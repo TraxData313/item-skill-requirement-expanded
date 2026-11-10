@@ -71,10 +71,18 @@ namespace ItemSkillRequirementExpanded.Core
         /// companions (player clan) and other heroes each by their toggle; in a tournament only when
         /// <see cref="SkillRequirementSettings.ApplyInTournaments"/>.
         /// </summary>
-        public static bool AppliesTo(PenaltyTarget who, bool inTournament, SkillRequirementSettings settings)
+        public static bool AppliesTo(PenaltyTarget who, bool inTournament, SkillRequirementSettings settings) =>
+            AppliesTo(who, inTournament, false, settings);
+
+        /// <summary>
+        /// As above, plus training fights (Training Battles drills, the training field, arena practice): there only
+        /// when <see cref="SkillRequirementSettings.ApplyInTraining"/>.
+        /// </summary>
+        public static bool AppliesTo(PenaltyTarget who, bool inTournament, bool inTraining, SkillRequirementSettings settings)
         {
             if (settings == null) return false;
             if (inTournament && !settings.ApplyInTournaments) return false;
+            if (inTraining && !settings.ApplyInTraining) return false;
             return who switch
             {
                 PenaltyTarget.Player => settings.ApplyToPlayer,

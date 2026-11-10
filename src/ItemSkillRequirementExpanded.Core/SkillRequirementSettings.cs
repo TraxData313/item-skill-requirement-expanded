@@ -185,6 +185,10 @@ namespace ItemSkillRequirementExpanded.Core
         /// <summary>Penalties in tournament fights (off = everyone fights a tournament as in vanilla).</summary>
         public bool ApplyInTournaments { get; set; } = false; // off since 2026-11-08: tournament sparring gear asks R 80-145
 
+        /// <summary>Penalties in training fights: Training Battles drills, the training field, arena practice
+        /// (off = everyone trains as in vanilla). Toni, 2026-11-10: even the wooden weapons asked more than his skill.</summary>
+        public bool ApplyInTraining { get; set; } = false;
+
         // ---- Same culture bonus (v1.2.0, Toni 2026-11-06; CultureBonus) ----
 
         /// <summary>A hero's skill counts boosted on gear of his own culture (item culture = hero culture, never the
