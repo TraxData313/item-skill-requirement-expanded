@@ -69,8 +69,8 @@ namespace ItemSkillRequirementExpanded.Models
         public override float CalculateAlternativeAttackDamage(in AttackInformation attackInformation, in AttackCollisionData collisionData, WeaponComponentData weapon)
             => BaseModel.CalculateAlternativeAttackDamage(in attackInformation, in collisionData, weapon);
 
-        public override float CalculatePassiveAttackDamage(BasicCharacterObject attackerCharacter, in AttackCollisionData collisionData, float baseDamage)
-            => BaseModel.CalculatePassiveAttackDamage(attackerCharacter, in collisionData, baseDamage);
+        public override float CalculatePassiveAttackDamage(in AttackInformation attackInformation, in AttackCollisionData collisionData, float baseDamage)
+            => BaseModel.CalculatePassiveAttackDamage(in attackInformation, in collisionData, baseDamage);
 
         public override MeleeCollisionReaction DecidePassiveAttackCollisionReaction(Agent attacker, Agent defender, bool isFatalHit)
             => BaseModel.DecidePassiveAttackCollisionReaction(attacker, defender, isFatalHit);
