@@ -1,6 +1,6 @@
 # Item Skill Requirement Expanded
 
-A Mount & Blade II: Bannerlord mod (1.4.8, War Sails compatible) that makes skill requirements **soft**. You can
+A Mount & Blade II: Bannerlord mod (game v1.5.7, War Sails compatible) that makes skill requirements **soft**. You can
 equip anything. If your skill is below what an item asks for, the requirement shows in red in the inventory and you
 fight with the item worse: weaker and slower swings, a shield that breaks sooner, heavy feet in armour, a bow that
 shoots weak and wide, a horse that answers the reins badly. Nothing is ever locked for the heroes the mod covers.
