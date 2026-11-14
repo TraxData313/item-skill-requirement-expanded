@@ -228,3 +228,14 @@ replacements (no code until he agrees).
 - Build 0 errors, 213 tests pass, AssemblyGuard (MCMv5) OK.
   - **Check in game**: start a drill -> the log has the `[mission]` line and a low-skill hero hits for vanilla damage;
     MCM "In training" on -> penalties back next drill. The inventory tooltip still shows penalties (as for tournaments).
+- 2026-11-14 game v1.5.7 (game updated 2026-11-11): v1.2.1 no longer loaded ("could not be loaded due to a missing or
+  conflicting dependency") - `AgentApplyDamageModel.CalculatePassiveAttackDamage` now takes `in AttackInformation`.
+  Fixed in acf3f3d; Toni: the game boots and plays fine with the dev build.
+- 2026-11-14 v1.3.0 published (training exemption + the v1.5.7 fix; minor bump for the new toggle, as v1.1.0 / v1.2.0):
+  SubModule v1.3.0, docs / store texts / Workshop tag say game v1.5.7, store texts name the training exemption.
+  Build 0 errors, 213 tests pass, AssemblyGuard (MCMv5) OK. GitHub release v1.3.0 (zip 52557 bytes). Steam item
+  3834307298 updated ("Uploading done!", still hidden). Nexus mods/14526 done through Chrome this time (howto:
+  `..\.manager\nexus-howto.md`): main file 1.3.0, the 1.2.1 file archived, changelog, description (it still said
+  "Tournaments too (also a toggle)": now tournaments + training, off by default, game v1.5.7).
+  The dev module `Modules\ItemSkillRequirementExpanded.Dev` was NOT redeployed (the launcher was running): it still
+  says v1.2.1 with the same code - run tools\deploy.ps1 once the game and launcher are closed.
