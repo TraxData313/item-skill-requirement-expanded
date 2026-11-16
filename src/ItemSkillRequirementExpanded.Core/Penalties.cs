@@ -6,12 +6,17 @@ namespace ItemSkillRequirementExpanded.Core
     /// <summary>One worn armour piece, as the armour speed penalty sees it.</summary>
     public readonly struct ArmourPiece
     {
-        public ArmourPiece(float weight, float shortfall, float maxPenalty = 1f)
+        public ArmourPiece(float weight, float shortfall, float maxPenalty = 1f, float penaltyScale = 1f)
         {
             Weight = weight;
             Shortfall = shortfall;
             MaxPenalty = maxPenalty;
+            PenaltyScale = penaltyScale;
         }
+
+        /// <summary>This piece's own penalty is multiplied by this (the low tier scale,
+        /// <see cref="CombatPenalties.TierPenaltyScale"/>) before the cap; 1 = full.</summary>
+        public float PenaltyScale { get; }
 
         /// <summary>The most this piece's own penalty may be (the starter cap, <see cref="CombatPenalties.StarterCap"/>);
         /// 1 = no cap. Applied before the weight-share aggregation.</summary>
@@ -167,6 +172,8 @@ namespace ItemSkillRequirementExpanded.Core
                 if (piece.Shortfall > 0f)
                 {
                     float penalty = ArmourPiecePenalty(piece.Shortfall, s);
+                    float scale = piece.PenaltyScale;
+                    if (!float.IsNaN(scale) && scale < 1f) penalty *= scale < 0f ? 0f : scale;
                     float cap = piece.MaxPenalty;
                     if (!float.IsNaN(cap) && cap < penalty) penalty = cap < 0f ? 0f : cap;
                     weighted += w * penalty;

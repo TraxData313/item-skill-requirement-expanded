@@ -109,6 +109,12 @@ at Polearm 0 loses 20% damage, swing speed and handling, a Tier 1 horse at Ridin
 not 75%. Armour is capped per piece before the weight share, so a whole Tier 1 set at Athletics 0 costs 20% foot
 speed. Both the tier and the cap are settings; a cap of 100% switches it off.
 
+**Lower tiers cost less**: plain army gear should not cripple you either. Every penalty of a **Tier 2** item is
+multiplied by **30%**, **Tier 3** by **50%** and **Tier 4** by **75%**; Tier 5 and 6 pay the full table above. A
+Tier 3 sword at One Handed 30 (R 75) loses about 33% damage instead of 67%; 2 kg Tier 2 leather that would cost -34%
+foot speed costs about -10%. Better gear still rewards the skill - it just no longer punishes a beginner for a
+common sword. Each scale is a setting; 100% = the full penalty.
+
 **Armour** is judged piece by piece, each by its own R, and the result is shared by weight: a 1 kg helmet just out of
 reach under a 20 kg cuirass you master costs about 1% speed; the whole set far out of reach costs the full 60%.
 
@@ -177,7 +183,8 @@ Everything is in the in-game **Mod Configuration Menu** (Mod Options > Item Skil
 - **Penalty curve**: where Mid and High sit (default 60% and 30% of R).
 - **Every Low / Mid / High** of every stat above.
 - **Starter gear** (its own group, right after Penalty curve): the highest tier that counts as starter gear
-  (default 1) and the most any one penalty of it can cost (default 20%), for every category.
+  (default 1) and the most any one penalty of it can cost (default 20%), for every category; and the penalty scale
+  for Tier 2 / 3 / 4 items (default 30% / 50% / 75%).
 - **Debug**: write `item_requirements.csv` (every item's tier, skill and R) at game start.
 
 Changes apply at once: penalties at the next hit or stat refresh, the tooltip when you next hover, requirements on

@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using ItemSkillRequirementExpanded.Core;
 
 namespace ItemSkillRequirementExpanded.Core.Tests;
@@ -16,7 +16,7 @@ public class SettingsMenuTests
         var ids = SettingsMenu.All.Select(s => s.Id).ToList();
         Assert.Equal(ids.Count, ids.Distinct().Count());
         Assert.Equal(SettingProperties.Select(p => p.Name).OrderBy(n => n), ids.OrderBy(n => n));
-        Assert.Equal(58, ids.Count);
+        Assert.Equal(61, ids.Count);
     }
 
     [Fact]

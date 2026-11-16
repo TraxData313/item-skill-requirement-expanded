@@ -153,6 +153,19 @@ namespace ItemSkillRequirementExpanded.Core
         /// inaccuracy), as a fraction: 0.2 = at most -20% / +20%. 1 or more = no cap.</summary>
         public float StarterGearMaxPenalty { get; set; } = 0.2f;
 
+        /// <summary>
+        /// Low tier penalty scale (Toni, 2026-11-16: a plain tier 3 army sword at -60-70%, or 2 kg leather at -34% foot
+        /// speed, was too much early on): every penalty of an item whose displayed tier is 2 is multiplied by this
+        /// (0.3 = a -60% penalty becomes -18%). 1 = full penalty. Tier 5 and 6 always pay in full.
+        /// </summary>
+        public float Tier2PenaltyScale { get; set; } = 0.3f;
+
+        /// <summary>As <see cref="Tier2PenaltyScale"/>, for displayed tier 3.</summary>
+        public float Tier3PenaltyScale { get; set; } = 0.5f;
+
+        /// <summary>As <see cref="Tier2PenaltyScale"/>, for displayed tier 4.</summary>
+        public float Tier4PenaltyScale { get; set; } = 0.75f;
+
         /// <summary>Horse speed lost (rider's Riding vs the horse's R): just below the requirement.</summary>
         public float MountSpeedPenaltyLow { get; set; } = 0.25f;
 

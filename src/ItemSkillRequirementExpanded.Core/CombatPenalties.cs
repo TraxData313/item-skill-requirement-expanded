@@ -111,7 +111,7 @@ namespace ItemSkillRequirementExpanded.Core
         public static WieldedMultipliers ForWielded(SkillKind kind, float shortfall, SkillRequirementSettings settings, bool thrownUsage = false, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return WieldedMultipliers.Identity;
-            float cap = StarterCap(displayedTier, settings);
+            var cap = LimitFor(displayedTier, settings);
             switch (kind)
             {
                 case SkillKind.Weapon when thrownUsage:
@@ -154,7 +154,7 @@ namespace ItemSkillRequirementExpanded.Core
         public static float DamageMultiplier(SkillKind kind, bool blowIsAmmo, float shortfall, SkillRequirementSettings settings, bool thrownUsage = false, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return 1f;
-            float cap = StarterCap(displayedTier, settings);
+            var cap = LimitFor(displayedTier, settings);
             if (blowIsAmmo)
                 return kind == SkillKind.Ranged ? CapLoss(Penalties.RangedDamageMultiplier(shortfall, settings), cap) : 1f;
             if (kind != SkillKind.Weapon) return 1f;
@@ -167,28 +167,28 @@ namespace ItemSkillRequirementExpanded.Core
         {
             if (settings == null || !(shortfall > 0f)) return 1f;
             if (kind != SkillKind.Ranged && !IsThrownUsage(kind, thrownUsage)) return 1f;
-            return CapGain(Penalties.InaccuracyMultiplier(shortfall, settings), StarterCap(displayedTier, settings));
+            return CapGain(Penalties.InaccuracyMultiplier(shortfall, settings), LimitFor(displayedTier, settings));
         }
 
         /// <summary>Multiplier on the damage an under-skilled shield takes, starter cap included.</summary>
         public static float ShieldDamageTakenMultiplier(float shortfall, SkillRequirementSettings settings, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return 1f;
-            return CapGain(Penalties.ShieldDamageTakenMultiplier(shortfall, settings), StarterCap(displayedTier, settings));
+            return CapGain(Penalties.ShieldDamageTakenMultiplier(shortfall, settings), LimitFor(displayedTier, settings));
         }
 
         /// <summary>Multiplier on an under-skilled rider's horse speed, starter cap included.</summary>
         public static float HorseSpeedMultiplier(float shortfall, SkillRequirementSettings settings, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return 1f;
-            return CapLoss(Penalties.HorseSpeedMultiplier(shortfall, settings), StarterCap(displayedTier, settings));
+            return CapLoss(Penalties.HorseSpeedMultiplier(shortfall, settings), LimitFor(displayedTier, settings));
         }
 
         /// <summary>Multiplier on an under-skilled rider's horse maneuver, starter cap included.</summary>
         public static float HorseManeuverMultiplier(float shortfall, SkillRequirementSettings settings, int? displayedTier = null)
         {
             if (settings == null || !(shortfall > 0f)) return 1f;
-            return CapLoss(Penalties.HorseManeuverMultiplier(shortfall, settings), StarterCap(displayedTier, settings));
+            return CapLoss(Penalties.HorseManeuverMultiplier(shortfall, settings), LimitFor(displayedTier, settings));
         }
 
         /// <summary>
@@ -196,7 +196,7 @@ namespace ItemSkillRequirementExpanded.Core
         /// BEFORE the weight-share aggregation - so a full starter set tops out at the cap in total too.
         /// </summary>
         public static ArmourPiece ArmourPieceFor(float weight, float shortfall, SkillRequirementSettings settings, int? displayedTier = null) =>
-            new ArmourPiece(weight, shortfall, StarterCap(displayedTier, settings));
+            new ArmourPiece(weight, shortfall, StarterCap(displayedTier, settings), TierPenaltyScale(displayedTier, settings));
 
         /// <summary>
         /// The starter cap for an item, as the most any one penalty may take (0.2 = -20% damage / speed, +20%
@@ -215,13 +215,58 @@ namespace ItemSkillRequirementExpanded.Core
             return cap < 0f ? 0f : cap > 1f ? 1f : cap;
         }
 
-        /// <summary>A loss multiplier (below 1) held at 1 - cap; untouched when cap &gt;= 1.</summary>
-        private static float CapLoss(float multiplier, float cap) =>
-            cap >= 1f || multiplier >= 1f - cap ? multiplier : 1f - cap;
+        /// <summary>
+        /// The low tier penalty scale for an item (Toni, 2026-11-16): every penalty of a displayed tier 2 / 3 / 4 item is
+        /// multiplied by <see cref="SkillRequirementSettings.Tier2PenaltyScale"/> / Tier3 / Tier4 (defaults 0.3 / 0.5 /
+        /// 0.75), so plain early gear (a tier 3 army sword, 2 kg leather) costs a little, not -60%. Tiers 0-1 (the starter
+        /// cap governs them), 5, 6 and an unknown tier: 1. Clamped to [0, 1]; NaN = 1.
+        /// </summary>
+        public static float TierPenaltyScale(int? displayedTier, SkillRequirementSettings settings)
+        {
+            if (settings == null || displayedTier == null) return 1f;
+            float scale;
+            switch (displayedTier.Value)
+            {
+                case 2: scale = settings.Tier2PenaltyScale; break;
+                case 3: scale = settings.Tier3PenaltyScale; break;
+                case 4: scale = settings.Tier4PenaltyScale; break;
+                default: return 1f;
+            }
+            if (float.IsNaN(scale)) return 1f;
+            return scale < 0f ? 0f : scale > 1f ? 1f : scale;
+        }
 
-        /// <summary>A gain multiplier (above 1, e.g. inaccuracy) held at 1 + cap; untouched when cap &gt;= 1.</summary>
-        private static float CapGain(float multiplier, float cap) =>
-            cap >= 1f || multiplier <= 1f + cap ? multiplier : 1f + cap;
+        /// <summary>How far an item's penalties may go: scaled by its tier, then capped (starter gear).</summary>
+        private readonly struct PenaltyLimit
+        {
+            public PenaltyLimit(float scale, float cap)
+            {
+                Scale = scale;
+                Cap = cap;
+            }
+
+            public float Scale { get; }
+            public float Cap { get; }
+        }
+
+        private static PenaltyLimit LimitFor(int? displayedTier, SkillRequirementSettings settings) =>
+            new PenaltyLimit(TierPenaltyScale(displayedTier, settings), StarterCap(displayedTier, settings));
+
+        /// <summary>A loss multiplier (below 1): its loss scaled by the tier, then held at the cap.</summary>
+        private static float CapLoss(float multiplier, PenaltyLimit limit)
+        {
+            if (multiplier >= 1f) return multiplier;
+            if (limit.Scale < 1f) multiplier = 1f - (1f - multiplier) * limit.Scale;
+            return limit.Cap >= 1f || multiplier >= 1f - limit.Cap ? multiplier : 1f - limit.Cap;
+        }
+
+        /// <summary>A gain multiplier (above 1, e.g. inaccuracy): its gain scaled by the tier, then held at the cap.</summary>
+        private static float CapGain(float multiplier, PenaltyLimit limit)
+        {
+            if (multiplier <= 1f) return multiplier;
+            if (limit.Scale < 1f) multiplier = 1f + (multiplier - 1f) * limit.Scale;
+            return limit.Cap >= 1f || multiplier <= 1f + limit.Cap ? multiplier : 1f + limit.Cap;
+        }
 
         /// <summary>
         /// The mounting check with vanilla's skill lock lifted: the base model's answer, or yes when the rider can ride

@@ -63,6 +63,10 @@ Renamed to this name on 2026-11-05 (old names and the leftover old dev install: 
 - Starter cap (Toni, 2026-11-05): every item whose displayed tier <= `StarterGearMaxTier` (default 1), any category,
   has each penalty capped at `StarterGearMaxPenalty` (default 20%) - `CombatPenalties.StarterCap`, passed as
   `req.DisplayedTier` by models and tooltip; armour capped per piece before the weight share (`ArmourPiece.MaxPenalty`).
+- Low tier penalty scale (Toni, 2026-11-16: a tier 3 army sword at -60-70% and 2 kg leather at -34% foot speed were
+  too much early on): every penalty of a displayed tier 2 / 3 / 4 item is multiplied by `Tier2PenaltyScale` /
+  `Tier3PenaltyScale` / `Tier4PenaltyScale` (0.3 / 0.5 / 0.75; tier 5-6 full) - `CombatPenalties.TierPenaltyScale`,
+  applied before the starter cap; armour per piece (`ArmourPiece.PenaltyScale`) before the weight share.
 
 ## Layout
 

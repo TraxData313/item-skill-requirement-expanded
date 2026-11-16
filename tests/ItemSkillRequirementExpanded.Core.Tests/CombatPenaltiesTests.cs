@@ -6,6 +6,9 @@ public class CombatPenaltiesTests
 {
     private static readonly SkillRequirementSettings Defaults = new();
 
+    // The low tier scale off: tier 2-4 pay the full curve, as before 2026-11-16.
+    private static readonly SkillRequirementSettings NoTierScale = new() { Tier2PenaltyScale = 1f, Tier3PenaltyScale = 1f, Tier4PenaltyScale = 1f };
+
     [Fact]
     public void TroopsNeverPay()
     {
@@ -220,11 +223,11 @@ public class CombatPenaltiesTests
         int tier = Requirements.DisplayedTier(tierf);
         Assert.Equal(2, tier);
         float s = Requirements.Shortfall(Requirements.Requirement(SkillKind.Ranged, tierf, Defaults), 0);
-        Assert.Equal(Penalties.RangedDamageMultiplier(s, Defaults), CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, s, Defaults, false, tier));
-        Assert.Equal(0.25f, CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, s, Defaults, false, tier), 4);
-        var m = CombatPenalties.ForWielded(SkillKind.Ranged, s, Defaults, false, tier);
-        Assert.Equal(Penalties.ReloadSpeedMultiplier(s, Defaults), m.Reload);
-        Assert.Equal(Penalties.InaccuracyMultiplier(s, Defaults), m.Inaccuracy);
+        Assert.Equal(Penalties.RangedDamageMultiplier(s, NoTierScale), CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, s, NoTierScale, false, tier));
+        Assert.Equal(1f - 0.75f * 0.3f, CombatPenalties.DamageMultiplier(SkillKind.Ranged, true, s, Defaults, false, tier), 4);
+        var m = CombatPenalties.ForWielded(SkillKind.Ranged, s, NoTierScale, false, tier);
+        Assert.Equal(Penalties.ReloadSpeedMultiplier(s, NoTierScale), m.Reload);
+        Assert.Equal(Penalties.InaccuracyMultiplier(s, NoTierScale), m.Inaccuracy);
     }
 
     [Fact]
@@ -300,7 +303,8 @@ public class CombatPenaltiesTests
         // Mixed: a capped tier 1 helmet and an uncapped tier 3 cuirass, each capped before the weight share.
         float s3 = ShortAtZero(SkillKind.Armour, 3f);
         var mixed = new[] { CombatPenalties.ArmourPieceFor(1f, s, Defaults, 1), CombatPenalties.ArmourPieceFor(3f, s3, Defaults, 3) };
-        Assert.Equal(1f - (1f * 0.2f + 3f * 0.6f) / 4f, Penalties.ArmourSpeedMultiplier(mixed, Defaults), 4);
+        // The tier 3 cuirass is scaled (Tier3PenaltyScale 0.5): -60% -> -30%.
+        Assert.Equal(1f - (1f * 0.2f + 3f * 0.3f) / 4f, Penalties.ArmourSpeedMultiplier(mixed, Defaults), 4);
     }
 
     [Fact]
@@ -321,16 +325,69 @@ public class CombatPenaltiesTests
     {
         Assert.Equal(2, Requirements.DisplayedTier(2f));
         float w = ShortAtZero(SkillKind.Weapon, 2f);
-        Assert.Equal(Penalties.WeaponDamageMultiplier(w, Defaults), CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, w, Defaults, false, 2));
-        Assert.Equal(0.25f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, w, Defaults, false, 2), 4);
+        Assert.Equal(Penalties.WeaponDamageMultiplier(w, NoTierScale), CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, w, NoTierScale, false, 2));
+        Assert.Equal(1f - 0.75f * 0.3f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, w, Defaults, false, 2), 4);
         float a = ShortAtZero(SkillKind.Armour, 2f);
-        Assert.Equal(0.4f, Penalties.ArmourSpeedMultiplier(new[] { CombatPenalties.ArmourPieceFor(10f, a, Defaults, 2) }, Defaults), 4);
+        Assert.Equal(1f - 0.6f * 0.3f, Penalties.ArmourSpeedMultiplier(new[] { CombatPenalties.ArmourPieceFor(10f, a, Defaults, 2) }, Defaults), 4);
         float h = ShortAtZero(SkillKind.Mount, 2f);
-        Assert.Equal(Penalties.HorseSpeedMultiplier(h, Defaults), CombatPenalties.HorseSpeedMultiplier(h, Defaults, 2));
-        Assert.Equal(Penalties.HorseManeuverMultiplier(h, Defaults), CombatPenalties.HorseManeuverMultiplier(h, Defaults, 2));
+        Assert.Equal(Penalties.HorseSpeedMultiplier(h, NoTierScale), CombatPenalties.HorseSpeedMultiplier(h, NoTierScale, 2));
+        Assert.Equal(Penalties.HorseManeuverMultiplier(h, NoTierScale), CombatPenalties.HorseManeuverMultiplier(h, NoTierScale, 2));
         float sh = ShortAtZero(SkillKind.Shield, 2f);
-        Assert.Equal(Penalties.ShieldDamageTakenMultiplier(sh, Defaults), CombatPenalties.ShieldDamageTakenMultiplier(sh, Defaults, 2));
+        Assert.Equal(Penalties.ShieldDamageTakenMultiplier(sh, NoTierScale), CombatPenalties.ShieldDamageTakenMultiplier(sh, NoTierScale, 2));
         // No tier passed (null) = no cap either.
         Assert.Equal(0.25f, CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, ShortAtZero(SkillKind.Weapon, 1f), Defaults), 4);
+    }
+
+    // ---- low tier penalty scale (Toni, 2026-11-16: a tier 3 army sword at -60-70% was too much early on) ----
+
+    [Fact]
+    public void TierPenaltyScale_ByDisplayedTier()
+    {
+        Assert.Equal(1f, CombatPenalties.TierPenaltyScale(0, Defaults));
+        Assert.Equal(1f, CombatPenalties.TierPenaltyScale(1, Defaults));
+        Assert.Equal(0.3f, CombatPenalties.TierPenaltyScale(2, Defaults));
+        Assert.Equal(0.5f, CombatPenalties.TierPenaltyScale(3, Defaults));
+        Assert.Equal(0.75f, CombatPenalties.TierPenaltyScale(4, Defaults));
+        Assert.Equal(1f, CombatPenalties.TierPenaltyScale(5, Defaults));
+        Assert.Equal(1f, CombatPenalties.TierPenaltyScale(6, Defaults));
+        Assert.Equal(1f, CombatPenalties.TierPenaltyScale(null, Defaults));
+        Assert.Equal(0f, CombatPenalties.TierPenaltyScale(2, new SkillRequirementSettings { Tier2PenaltyScale = -1f }));
+        Assert.Equal(1f, CombatPenalties.TierPenaltyScale(3, new SkillRequirementSettings { Tier3PenaltyScale = float.NaN }));
+    }
+
+    [Fact]
+    public void TierThreeSwordAtLowSkill_AboutThirtyPercentNotSeventy()
+    {
+        // Tier 3 sword, R 75, One Handed 30 (r 0.4): the full curve takes ~67% damage, the scaled one half that.
+        int r = Requirements.Requirement(SkillKind.Weapon, 3f, Defaults);
+        Assert.Equal(75, r);
+        float s = Requirements.Shortfall(r, 30);
+        float full = 1f - Penalties.WeaponDamageMultiplier(s, Defaults);
+        Assert.InRange(full, 0.6f, 0.7f);
+        float scaled = 1f - CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, s, Defaults, false, 3);
+        Assert.Equal(full * 0.5f, scaled, 4);
+        Assert.InRange(scaled, 0.2f, 0.4f);
+        // Tooltip agrees.
+        var parts = TooltipPenalties.For(SkillKind.Weapon, s, Defaults, false, 3);
+        Assert.Contains(parts, p => p.Stat == PenaltyStat.Damage && p.Percent == -(int)System.Math.Round(scaled * 100));
+    }
+
+    [Fact]
+    public void TierTwoLeatherAtLowAthletics_AboutTenPercentFootSpeed()
+    {
+        // 2 kg tier 2 leather, R 45, Athletics 30: the full curve ~-37% (Toni saw -34%), scaled ~-11%.
+        float s = Requirements.Shortfall(Requirements.Requirement(SkillKind.Armour, 2f, Defaults), 30);
+        float full = 1f - Penalties.ArmourSpeedMultiplier(new[] { new ArmourPiece(2f, s) }, Defaults);
+        float scaled = 1f - Penalties.ArmourSpeedMultiplier(new[] { CombatPenalties.ArmourPieceFor(2f, s, Defaults, 2) }, Defaults);
+        Assert.Equal(full * 0.3f, scaled, 4);
+        Assert.InRange(scaled, 0.05f, 0.15f);
+    }
+
+    [Fact]
+    public void TierFiveAndSix_StillFullPenalty()
+    {
+        float s = Requirements.Shortfall(Requirements.Requirement(SkillKind.Weapon, 6f, Defaults), 30);
+        Assert.Equal(Penalties.WeaponDamageMultiplier(s, Defaults), CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, s, Defaults, false, 6));
+        Assert.Equal(Penalties.WeaponDamageMultiplier(s, Defaults), CombatPenalties.DamageMultiplier(SkillKind.Weapon, false, s, Defaults, false, 5));
     }
 }
